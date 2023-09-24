@@ -258,18 +258,12 @@ function deleteAccount() {
         return;
     }
 
-    firebase.database().ref("users/" + user.uid).remove()
+    user.delete()
     .then(() => {
-        user.delete()
-        .then(() => {
-            alert("Your account has been successfully deleted. You will now be logged out.");
-            window.location.href = "/";
-        })
-        .catch((error) => {
-            dashboardErrorHandler(error, "An error occurred deleting your account. All of your data has been deleted from our servers, but your account has not been deleted from the site.");
-        });
+        alert("Your account has been successfully deleted. You will now be logged out.");
+        window.location.href = "/";
     })
     .catch((error) => {
-        dashboardErrorHandler(error, "An error occurred deleting your data from our servers. Your account has not been deleted.");
+        dashboardErrorHandler(error, "An error occurred deleting your account. All of your data has been deleted from our servers, but your account has not been deleted from the site.");
     });
 }
