@@ -270,8 +270,8 @@ def update_gradescope_assignment(assignment: Assignment, old_assignment: Assignm
         assignment["due_date_changed"] = False
     else:
         assignment["event_id"] = old_assignment["event_id"]
-        assignment["due_date_changed"] = old_assignment["due_date_changed"] or \
-            assignment["due_date"] != old_assignment["due_date"]
+        assignment["due_date_changed"] = (old_assignment["due_date_changed"]
+                                          or assignment["due_date"] != old_assignment["due_date"])
     return assignment
 
 

@@ -147,7 +147,7 @@ async def update_event_cache_for_user(uid) -> None:
 @utils.wrap_async_exceptions
 async def update_calendar_for_user(uid) -> None:
     if not (calendar_id := utils.get_calendar_id(uid)) or \
-       not (user_settings := utils.get_user_settings(uid)):
+            not (user_settings := utils.get_user_settings(uid)):
         return
 
     completed_assignment_color = user_settings["completed_assignment_color"]
