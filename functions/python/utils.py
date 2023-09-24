@@ -5,7 +5,7 @@ import re
 import xml.etree.ElementTree as ElementTree
 from lxml.etree import XMLParser
 from datetime import datetime
-from typing import Any, Generator, TypeVar, Callable, cast, Type
+from typing import Any, TypeVar, Callable, cast, Type
 
 import aiohttp
 import requests
@@ -16,14 +16,22 @@ from firebase_functions.params import SecretParam
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
-from typing_extensions import ContextManager
 
 from google.oauth2.credentials import Credentials
 
 GRADESCOPE_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S %z"
+ILLEGAL_DATABASE_CHARS = "[\\$\\#\\[\\]\\/\\.\\\\]"
 
 T = TypeVar('T')
 U = TypeVar('U')
+Assignment = dict[str, str | bool]
+AssignmentList = dict[str, Assignment]
+Course = dict[str, str]
+CourseList = dict[str, Course]
+CourseSettings = dict[str, str]
+Calendar = dict
+CallableFunctionResponse = str | dict
+UserSettings = dict[str, Any]
 
 
 # region Gradescope
@@ -34,7 +42,8 @@ def login_to_gradescope(email: str, password: str) -> str | None:
     with session.get("https://www.gradescope.com/login") as response:
         if response.status_code != 200:
             return None
-        authenticity_token_el = ElementTree.fromstring(response.content, parser=XMLParser(recover=True)).find(".//input[@name='authenticity_token']")
+        authenticity_token_el = ElementTree.fromstring(response.content, parser=XMLParser(recover=True)).find(
+            ".//input[@name='authenticity_token']")
         if authenticity_token_el is None:
             return None
         authenticity_token = authenticity_token_el.get("value")
@@ -57,14 +66,10 @@ def login_to_gradescope(email: str, password: str) -> str | None:
         return response.cookies.get("signed_token")
 
 
-def check_raw_gradescope_token(token: Any) -> str | None:
-    if not token or not isinstance(token, str):
-        return None
+def check_gradescope_token(token: Any) -> bool:
+    if not isinstance(token, str):
+        return False
 
-    return token if check_gradescope_token(token) else None
-
-
-def check_gradescope_token(token: str) -> bool:
     with requests.get("https://www.gradescope.com/account", cookies={"signed_token": token},
                       allow_redirects=False) as response:
         return response.status_code == 200
@@ -75,7 +80,7 @@ def get_gradescope_token(uid: str) -> str | None:
         return None
     gradescope_token = db.reference(f'users/{uid}/gradescope/token').get()
 
-    if not (gradescope_token := check_raw_gradescope_token(gradescope_token)):
+    if not (gradescope_token := check_gradescope_token(gradescope_token)):
         gradescope_username = get_db_ref_as_type(f'users/{uid}/gradescope/username', str)
         gradescope_password = get_db_ref_as_type(f'users/{uid}/gradescope/password', str)
         if gradescope_username and gradescope_password:
@@ -110,16 +115,10 @@ async def get_async_data_from_gradescope(url: str, query: str, session: aiohttp.
         return ElementTree.fromstring(await response.read()).findall(query)
 
 
-async def fetch_course_assignments(course_id: str, course: dict[str, str], session: aiohttp.ClientSession) \
-        -> dict[str, dict[str, Any]]:
-    illegal_chars = "[\\$\\#\\[\\]\\/\\.\\\\]"
+async def fetch_course_assignments(course_id: str, course: Course, session: aiohttp.ClientSession) -> AssignmentList:
     assignments = {
-        f'{course_id}-{re.sub(illegal_chars, "", get_assignment_name(assignment))}': {
-            "name": get_assignment_name(assignment),
-            "due_date": due_date_from_progress_div(assignment[2][0][2]),
-            "completed": assignment[1][1].text == "Submitted",
-            "course_id": course_id
-        }
+        f'{course_id}-{re.sub(ILLEGAL_DATABASE_CHARS, "", get_assignment_name(assignment))}':
+            parse_assignment(assignment, course_id)
         for assignment in
         await get_async_data_from_gradescope(course["href"], ".//table[@id='assignments-student-table']/tbody/tr",
                                              session)
@@ -128,20 +127,34 @@ async def fetch_course_assignments(course_id: str, course: dict[str, str], sessi
     # Filter out assignments that don't have a due date or were parsed incorrectly
     assignments = {
         assignment_id: assignment for assignment_id, assignment in assignments.items() if
-        isinstance(assignment, dict) and assignment["due_date"]["normal"]
+        isinstance(assignment, dict) and assignment["due_date"]
     }
 
     return assignments
 
 
-async def enumerate_gradescope_assignments(course_settings: dict, gradescope_token: str) -> dict[str, dict[str, Any]]:
+def parse_assignment(assignment: ElementTree.Element, course_id: str) -> Assignment | None:
+    try:
+        return {
+            "name": get_assignment_name(assignment),
+            "due_date": due_date_from_progress_div(assignment[2][0][2]),
+            "completed": assignment[1][1].text == "Submitted",
+            "course_id": course_id,
+            "due_date_changed": False
+        }
+    except Exception as e:
+        print(e)
+        return None
+
+
+async def enumerate_gradescope_assignments(course_settings: CourseList, gradescope_token: str) -> AssignmentList:
     gradescope_cookies = {"signed_token": gradescope_token}
     async with aiohttp.ClientSession(cookies=gradescope_cookies, cookie_jar=CookieJar(quote_cookie=False)) as session:
         tasks = [fetch_course_assignments(course_id, course, session) for course_id, course in
                  course_settings.items()]
         assignments = await asyncio.gather(*tasks)
 
-    assignments = {assignment_name: assignment for course_assignments in assignments for assignment_name, assignment in
+    assignments = {assignment_id: assignment for course_assignments in assignments for assignment_id, assignment in
                    course_assignments.items()}
 
     return assignments
@@ -153,12 +166,9 @@ def get_assignment_name(assignment: ElementTree.Element) -> str:
                                 lambda name: name.text, "<Unknown Assignment>").strip()
 
 
-def due_date_from_progress_div(progress_div: ElementTree.Element) -> dict[str, datetime | None]:
+def due_date_from_progress_div(progress_div: ElementTree.Element) -> str:
     times = progress_div.findall("./time")
-    return {
-        "normal": datetime.strptime(times[1].get("datetime"), GRADESCOPE_DATETIME_FORMAT),
-        "late": datetime.strptime(times[2].get("datetime"), GRADESCOPE_DATETIME_FORMAT) if len(times) > 2 else None
-    }
+    return datetime.strptime(times[1].get("datetime"), GRADESCOPE_DATETIME_FORMAT).isoformat()
 
 
 # endregion
@@ -193,54 +203,41 @@ def login_to_google(uid: str, oauth2_client_id: SecretParam, oauth2_client_secre
     return credentials
 
 
-def validate_calendar(calendar: dict) -> bool:
-    return calendar and not calendar.get("deleted", False) and calendar["accessRole"] in ("owner", "writer")
+def get_calendar_id(uid: str) -> str | None:
+    calendar_id = get_db_ref_as_type(f'users/{uid}/google/calendar_id', str)
 
-
-def get_calendar(calendar_service: Any, calendar_id: str) -> dict | None:
-    try:
-        return calendar_service.calendarList().get(calendarId=calendar_id).execute()
-    except HttpError as e:
-        if e.status_code == 404:
-            calendar = None
-        else:
-            raise e
-
-
-def enumerate_calendar_events(calendar_service: Any, calendar_id: str) -> Generator[dict, None, None]:
-    page_token = None
-    while True:
-        events = calendar_service.events().list(calendarId=calendar_id, pageToken=page_token).execute()
-        for event in events["items"]:
-            yield event
-        page_token = events.get("nextPageToken")
-        if not page_token:
-            break
-
-
-def find_assignment_event(assignment: dict, events: list[dict]) -> dict | None:
-    assignment_name = f'{assignment["name"]} [{assignment["course_id"]}]'
-    due_date = assignment["due_date"]["normal"]
-    for event in events:
-        if event["summary"] == assignment_name and datetime.fromisoformat(event["start"]["dateTime"]) == due_date:
-            return event
+    if isinstance(calendar_id, str) and calendar_id != "invalid":
+        return calendar_id
     return None
 
 
-def create_assignment_event(calendar_service: Any, event_create_batch: Any, calendar_id: str, course: dict,
-                            assignment: dict, completed_color: str, callback: Callable[[Any, Any, Any], Any]) -> None:
-    if not course or not all(key in course for key in ("name", "color", "href")):
+def validate_calendar_id(calendar_id: str, calendar_service: Any) -> bool:
+    try:
+        calendar = calendar_service.calendarList().get(calendarId=calendar_id).execute()
+    except HttpError as e:
+        if e.status_code == 404:
+            return False
+        else:
+            raise e
+
+    return calendar and not calendar.get("deleted", False) and calendar["accessRole"] in ("owner", "writer")
+
+
+def create_assignment_event(calendar_service: Any, event_create_batch: Any, calendar_id: str, course: Course,
+                            assignment: Assignment, completed_color: str | None,
+                            callback: Callable[[Any, Any, Any], Any]) -> None:
+    if not validate_object_with_keys(course, "name", "color", "href"):
         return
+
     event = {
         "summary": f'{assignment["name"]} [{assignment["course_id"]}]',
         "description": f'Assignment for <a href="{format_gradescope_url(course["href"])}">{course["name"]}</a> on '
                        f'Gradescope',
         "start": {
-            "dateTime": assignment["due_date"]["normal"].isoformat()
+            "dateTime": assignment["due_date"]
         },
         "end": {
-            "dateTime": assignment["due_date"]["normal"].isoformat()
-            # "dateTime": assignment["due_date"]["late"].isoformat()
+            "dateTime": assignment["due_date"]
         },
         "colorId": completed_color if completed_color and assignment["completed"] else course["color"],
     }
@@ -248,16 +245,16 @@ def create_assignment_event(calendar_service: Any, event_create_batch: Any, cale
 
 
 def patch_assignment_event(calendar_service: Any, event_update_batch: Any, calendar_id: str, event_id: str,
-                           course: dict, assignment: dict, completed_color: str | None) -> None:
-    if not course or not all(key in course for key in ("name", "color", "href")):
+                           course: Course, assignment: Assignment, completed_color: str | None) -> None:
+    if not validate_object_with_keys(course, "name", "color", "href"):
         return
+
     event = {
         "start": {
-            "dateTime": assignment["due_date"]["normal"].isoformat()
+            "dateTime": assignment["due_date"]
         },
         "end": {
-            "dateTime": assignment["due_date"]["normal"].isoformat()
-            # "dateTime": assignment["due_date"]["late"].isoformat()
+            "dateTime": assignment["due_date"]
         },
         "colorId": completed_color if completed_color and assignment["completed"] else course["color"],
     }
@@ -267,50 +264,29 @@ def patch_assignment_event(calendar_service: Any, event_update_batch: Any, calen
 # endregion
 
 # region Firebase
-
-def get_course_color(course_id: str, course_settings: dict) -> str:
-    return course_settings[course_id].get("color", None) if course_id in course_settings else None
-
-
-def export_gradescope_assignment(assignment: dict[str, Any], event_id: str = None, due_date_changed = False) -> dict[str, Any]:
-    return {
-        "name": assignment["name"],
-        "due_date": {
-            "normal": assignment["due_date"]["normal"].isoformat(),
-            "late": assignment["due_date"]["late"].isoformat() if assignment["due_date"].get("late", None) else None
-        },
-        "completed": assignment["completed"],
-        "due_date_changed": due_date_changed,
-        "course_id": assignment["course_id"],
-        "event_id": event_id
-    }
-
-def update_gradescope_assignment(assignment: dict[str, Any], old_assignment: dict[str, Any] | None) -> dict[str, Any]:
-    return export_gradescope_assignment(
-        assignment,
-        old_assignment["event_id"] if old_assignment else "",
-        import_gradescope_assignment(old_assignment)["due_date"] != assignment["due_date"] if old_assignment else False
-    )
+def update_gradescope_assignment(assignment: Assignment, old_assignment: Assignment | None) -> Assignment:
+    if not old_assignment:
+        assignment["event_id"] = ""
+        assignment["due_date_changed"] = False
+    else:
+        assignment["event_id"] = old_assignment["event_id"]
+        assignment["due_date_changed"] = old_assignment["due_date_changed"] or \
+            assignment["due_date"] != old_assignment["due_date"]
+    return assignment
 
 
-def import_gradescope_assignment(assignment: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "name": assignment["name"],
-        "due_date": {
-            "normal": datetime.fromisoformat(assignment["due_date"]["normal"]),
-            "late": datetime.fromisoformat(assignment["due_date"]["late"]) if assignment["due_date"].get("late",
-                                                                                                         None) else None
-        },
-        "completed": assignment["completed"],
-        "course_id": assignment["course_id"]
-    }
+def get_user_settings(uid: str) -> UserSettings | None:
+    user_settings = get_db_ref_as_type(f'users/{uid}/settings', UserSettings)
+    if validate_object_with_keys(user_settings, "courses", "completed_assignment_color"):
+        return user_settings
+    return None
 
 
 def get_db_ref_as_type(path: str, datatype: Type[T], **kwargs) -> T:
     return cast(datatype, db.reference(path).get(**kwargs))
 
 
-def fn_response(data: str | dict, code: FunctionsErrorCode = FunctionsErrorCode.OK) -> str | dict:
+def fn_response(data: str | dict, code: FunctionsErrorCode = FunctionsErrorCode.OK) -> CallableFunctionResponse:
     if code == FunctionsErrorCode.OK:
         return data
     if isinstance(data, dict):
@@ -346,5 +322,9 @@ def sync(func: Callable) -> Callable:
         return asyncio.run(func(*args, **kwargs))
 
     return wrapper
+
+
+def validate_object_with_keys(obj: Any, *keys: str) -> bool:
+    return obj and all(key in obj for key in keys)
 
 # endregion

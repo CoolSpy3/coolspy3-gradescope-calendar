@@ -16,13 +16,13 @@ OAUTH2_CLIENT_SECRET = SecretParam("GOOGLE_CLIENT_SECRET")
 
 
 @https_fn.on_call()
-def update_gradescope_token(req: https_fn.CallableRequest) -> str | dict:
+def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     if not req.auth:
         return utils.fn_response({"success": False}, FunctionsErrorCode.UNAUTHENTICATED)
     uid = req.auth.uid
 
     if "token" in req.data:
-        if utils.check_raw_gradescope_token(req.data["token"]):
+        if utils.check_gradescope_token(req.data["token"]):
             db.reference(f'users/{uid}/gradescope/token').set(req.data["token"])
             db.reference(f'users/{uid}/gradescope/valid_auth').set(True)
             return utils.fn_response({"success": True})
@@ -32,9 +32,7 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> str | dict:
     if "email" not in req.data or "password" not in req.data:
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.INVALID_ARGUMENT)
 
-    token = utils.login_to_gradescope(req.data["email"], req.data["password"])
-
-    if not token:
+    if not (token := utils.login_to_gradescope(req.data["email"], req.data["password"])):
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.INVALID_ARGUMENT)
 
     db.reference(f'users/{uid}/gradescope/token').set(token)
@@ -48,13 +46,12 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> str | dict:
 
 
 @https_fn.on_call()
-def refresh_course_list(req: https_fn.CallableRequest) -> str | dict:
+def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     if not req.auth:
         return utils.fn_response({"success": False}, FunctionsErrorCode.UNAUTHENTICATED)
     uid = req.auth.uid
 
-    gradescope_token = utils.get_gradescope_token(uid)
-    if not gradescope_token:
+    if not (gradescope_token := utils.get_gradescope_token(uid)):
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.PERMISSION_DENIED)
 
     gradescope_courses = [
@@ -73,9 +70,7 @@ def refresh_course_list(req: https_fn.CallableRequest) -> str | dict:
         gradescope_courses
     }
 
-    existing_courses = utils.get_db_ref_as_type(f'users/{uid}/settings/courses', dict)
-    if not existing_courses:
-        existing_courses = {}
+    existing_courses = utils.get_db_ref_as_type(f'users/{uid}/settings/courses', utils.CourseSettings) or {}
 
     for course_id, course in gradescope_courses.items():
         if course_id in existing_courses:
@@ -90,46 +85,28 @@ def refresh_course_list(req: https_fn.CallableRequest) -> str | dict:
 
 @https_fn.on_call()
 @utils.sync
-async def refresh_events(req: https_fn.CallableRequest) -> str | dict:
+async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     if not req.auth:
         return utils.fn_response({"success": False}, FunctionsErrorCode.UNAUTHENTICATED)
     uid = req.auth.uid
 
-    calendar_id = utils.get_db_ref_as_type(f'users/{uid}/google/calendar_id', str)
-
-    if not calendar_id or not isinstance(calendar_id, str) or calendar_id == "invalid":
+    if not (calendar_id := utils.get_calendar_id(uid)):
         return utils.fn_response("invalid_calendar_selection", FunctionsErrorCode.FAILED_PRECONDITION)
 
-    gradescope_token = utils.get_gradescope_token(uid)
-    if not gradescope_token:
-        return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.PERMISSION_DENIED)
-
-    user_settings = utils.get_db_ref_as_type(f'users/{uid}/settings', dict)
-
-    if not user_settings or "courses" not in user_settings or "completed_assignment_color" not in user_settings:
+    if not (user_settings := utils.get_user_settings(uid)):
         return utils.fn_response("invalid_user_settings", FunctionsErrorCode.FAILED_PRECONDITION)
+
+    if not (gradescope_token := utils.get_gradescope_token(uid)):
+        return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.PERMISSION_DENIED)
 
     completed_assignment_color = user_settings["completed_assignment_color"]
 
     with build_google_api_service('calendar', 'v3', credentials=req.auth.token) as calendar_service:
-        calendar = utils.get_calendar(calendar_service, calendar_id)
-
-        if not utils.validate_calendar(calendar):
+        if not utils.validate_calendar_id(calendar_id, calendar_service):
             db.reference(f'users/{uid}/google/calendar_id').delete()
             return utils.fn_response("invalid_calendar_selection", FunctionsErrorCode.FAILED_PRECONDITION)
 
-        loop = asyncio.get_running_loop()
-
-        def enumerate_calendar_events():
-            return list(utils.enumerate_calendar_events(calendar_service, calendar_id))
-
-        event_task = loop.run_in_executor(None, enumerate_calendar_events)
-
-        events, assignments = await asyncio.gather(event_task,
-                                                   utils.enumerate_gradescope_assignments(
-                                                       user_settings["courses"], gradescope_token))
-
-        assignment_cache = get_updated_assignment_cache(uid, assignments)
+        assignment_cache = await get_updated_assignment_cache(uid, user_settings, gradescope_token)
 
         await update_calendar_from_cache(uid, calendar_service, calendar_id, completed_assignment_color, user_settings,
                                          assignment_cache)
@@ -139,7 +116,7 @@ async def refresh_events(req: https_fn.CallableRequest) -> str | dict:
 
 # @scheduler_fn.on_schedule(schedule="0 0 * * *")
 @utils.sync
-async def update_event_caches(event: scheduler_fn.ScheduledEvent) -> None:
+async def update_event_caches(_event: scheduler_fn.ScheduledEvent) -> None:
     users = utils.get_db_ref_as_type("users", dict, shallow=True)
     if not users:
         return
@@ -150,7 +127,7 @@ async def update_event_caches(event: scheduler_fn.ScheduledEvent) -> None:
 
 # @scheduler_fn.on_schedule(schedule="0 0 * * *", secrets=[OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET])
 @utils.sync
-async def update_calendars(event: scheduler_fn.ScheduledEvent) -> None:
+async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
     users = utils.get_db_ref_as_type("users", dict, shallow=True)
     if not users:
         return
@@ -161,36 +138,16 @@ async def update_calendars(event: scheduler_fn.ScheduledEvent) -> None:
 
 @utils.wrap_async_exceptions
 async def update_event_cache_for_user(uid) -> None:
-    gradescope_token = utils.get_gradescope_token(uid)
-    if not gradescope_token:
-        return
+    if (gradescope_token := utils.get_gradescope_token(uid)) and (user_settings := utils.get_user_settings(uid)):
+        assignment_cache = await get_updated_assignment_cache(uid, user_settings, gradescope_token)
 
-    user_settings = utils.get_db_ref_as_type(f'users/{uid}/settings', dict)
-
-    if not user_settings or "courses" not in user_settings or "completed_assignment_color" not in user_settings:
-        return
-
-    assignments = await utils.enumerate_gradescope_assignments(user_settings["courses"], gradescope_token)
-
-    assignment_cache = get_updated_assignment_cache(uid, assignments)
-
-    db.reference(f'assignments/{uid}/cache').set(assignment_cache)
+        db.reference(f'assignments/{uid}/cache').set(assignment_cache)
 
 
 @utils.wrap_async_exceptions
 async def update_calendar_for_user(uid) -> None:
-    calendar_id = utils.get_db_ref_as_type(f'users/{uid}/google/calendar_id', str)
-
-    if not calendar_id or not isinstance(calendar_id, str) or calendar_id == "invalid":
-        return
-
-    gradescope_token = utils.get_gradescope_token(uid)
-    if not gradescope_token:
-        return
-
-    user_settings = utils.get_db_ref_as_type(f'users/{uid}/settings', dict)
-
-    if not user_settings or "courses" not in user_settings or "completed_assignment_color" not in user_settings:
+    if not (calendar_id := utils.get_calendar_id(uid)) or \
+       not (user_settings := utils.get_user_settings(uid)):
         return
 
     completed_assignment_color = user_settings["completed_assignment_color"]
@@ -198,33 +155,32 @@ async def update_calendar_for_user(uid) -> None:
     with build_google_api_service('calendar', 'v3',
                                   credentials=utils.login_to_google(uid, OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET)
                                   ) as calendar_service:
-        calendar = utils.get_calendar(calendar_service, calendar_id)
 
-        if not utils.validate_calendar(calendar):
+        if not utils.validate_calendar_id(calendar_id, calendar_service):
             db.reference(f'users/{uid}/google/calendar_id').set("invalid")
             return
 
-        assignment_cache = utils.get_db_ref_as_type(f'assignments/{uid}/cache', dict)
-        if not assignment_cache:
+        if not (assignment_cache := utils.get_db_ref_as_type(f'assignments/{uid}/cache', dict)):
             return
 
         await update_calendar_from_cache(uid, calendar_service, calendar_id, completed_assignment_color, user_settings,
                                          assignment_cache)
 
 
-def get_updated_assignment_cache(uid: str, gradescope_assignments: dict[str, Any]) -> dict[str, Any]:
-    assignment_cache = utils.get_db_ref_as_type(f'assignments/{uid}/cache', dict)
-    if not assignment_cache:
-        assignment_cache = {}
+async def get_updated_assignment_cache(uid: str, user_settings: dict[str, Any], gradescope_token: str) \
+        -> dict[str, Any]:
+    assignments = await utils.enumerate_gradescope_assignments(user_settings["courses"], gradescope_token)
 
-    return {
-        assignment_id: utils.update_gradescope_assignment(assignment, assignment_cache.get(assignment_id, None))
-        for assignment_id, assignment in gradescope_assignments.items()
-    }
+    assignment_cache = utils.get_db_ref_as_type(f'assignments/{uid}/cache', dict) or {}
+
+    for assignment_id, assignment in assignments.items():
+        utils.update_gradescope_assignment(assignment, assignment_cache.get(assignment_id, None))
+
+    return assignment_cache
 
 
 async def update_calendar_from_cache(uid: str, calendar_service: Any, calendar_id: str, completed_assignment_color: str,
-                                     user_settings: dict[str, Any], assignment_cache: dict[str, Any]) -> None:
+                                     user_settings: dict[str, Any], assignment_cache: utils.AssignmentList) -> None:
     event_update_batch = calendar_service.new_batch_http_request()
 
     for assignment_id, assignment in assignment_cache.copy().items():
@@ -234,8 +190,7 @@ async def update_calendar_from_cache(uid: str, calendar_service: Any, calendar_i
         if assignment["event_id"]:
             if (completed_assignment_color and assignment["completed"]) or assignment["due_data_changed"]:
                 utils.patch_assignment_event(calendar_service, event_update_batch, calendar_id, assignment["event_id"],
-                                             user_settings["courses"].get(assignment["course_id"], {}),
-                                             utils.import_gradescope_assignment(assignment),
+                                             user_settings["courses"].get(assignment["course_id"], {}), assignment,
                                              completed_assignment_color)
 
         elif not assignment["completed"]:
@@ -247,8 +202,7 @@ async def update_calendar_from_cache(uid: str, calendar_service: Any, calendar_i
                 return update_cache_helper
 
             utils.create_assignment_event(calendar_service, event_update_batch, calendar_id,
-                                          user_settings["courses"].get(assignment["course_id"], {}),
-                                          utils.import_gradescope_assignment(assignment),
+                                          user_settings["courses"].get(assignment["course_id"], {}), assignment,
                                           completed_assignment_color, update_cache(assignment))
 
     await asyncio.get_event_loop().run_in_executor(None, event_update_batch.execute)
