@@ -1,0 +1,66 @@
+{
+    "rules": {
+        "users": {
+            "$uid": {
+                ".read": false,
+                ".write": "auth != null && auth.uid == $uid",
+                "gradescope": {
+                    "valid_auth": {
+                        ".read": "auth != null && auth.uid == $uid",
+                        ".validate": "newData.isBoolean()"
+                    },
+                    "token": {
+                        ".validate": "newData.isString()"
+                    },
+                    "username": {
+                        ".validate": "newData.isString()"
+                    },
+                    "password": {
+                        ".validate": "newData.isString()"
+                    },
+                    "$other": {
+                        ".validate": false
+                    }
+                },
+                "google": {
+                    "refresh_token": {
+                        ".validate": "newData.isString()"
+                    },
+                    "calendar_id": {
+                        ".read": "auth != null && auth.uid == $uid",
+                        ".validate": "newData.isString()"
+                    }
+                },
+                "settings": {
+                    ".read": "auth != null && auth.uid == $uid",
+                    "courses": {
+                        "$course_id": {
+                            ".validate": "data.exists()",
+                            "name": {
+                                ".validate": "newData.isString()"
+                            },
+                            "color": {
+                                ".validate": "newData.isString()"
+                            },
+                            "href": {
+                                ".validate": "newData.isString() && newData.val().matches(/^[\\/a-zA-Z0-9]+$/)"
+                            },
+                            "$other": {
+                                ".validate": false
+                            }
+                        }
+                    },
+                    "completed_assignment_color": {
+                        ".validate": "newData.isString()"
+                    },
+                    "$other": {
+                        ".validate": false
+                    }
+                },
+                "$other": {
+                    ".validate": false
+                }
+            }
+        }
+    }
+}

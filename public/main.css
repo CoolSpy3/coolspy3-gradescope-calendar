@@ -1,0 +1,195 @@
+html, body {
+    background-color: white;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    max-width: 100vw;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+header, footer {
+    background-color: lightblue;
+    margin: 0;
+    width: 100%;
+    color: darkcyan;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    display: flex;
+}
+
+header {
+    justify-content: space-between;
+}
+
+header h1, header a {
+    text-decoration: none;
+    color: darkcyan;
+}
+
+#login-button {
+    margin: 20px;
+    padding: 10px;
+    background-color: cornflowerblue;
+    border: 2px solid black;
+    border-radius: 5px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: block;
+}
+
+#login-button:hover {
+    background-color: teal;
+    border-color: darkcyan;
+}
+
+#login-button:active {
+    background-color: transparent;
+    border-color: cornflowerblue;
+    color: cornflowerblue;
+}
+
+h1 {
+    margin: 0;
+    padding: 10px;
+}
+
+.content {
+    margin: 10px 30px;
+}
+
+.button-container {
+    display: flex;
+    justify-content: left;
+    margin: 20px 0;
+}
+
+button {
+    margin: 0 10px;
+    padding: 10px;
+    border: 2px solid;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    display: block;
+}
+
+button:disabled, button:disabled:hover, button:disabled:active {
+    cursor: not-allowed;
+    color: lightgrey;
+    border-color: lightgrey;
+    background-color: whitesmoke;
+}
+
+.red-button {
+    background-color: red;
+    color: white;
+    border-color: darkred;
+}
+
+.red-button:hover {
+    background-color: tomato;
+    border-color: red;
+}
+
+.red-button:active {
+    background-color: transparent;
+    border-color: lightcoral;
+    color: lightcoral;
+}
+
+.blue-button {
+    background-color: lightblue;
+    color: darkcyan;
+    border-color: darkcyan;
+}
+
+.blue-button:hover {
+    background-color: darkcyan;
+    border-color: lightblue;
+    color: lightblue;
+}
+
+.blue-button:active {
+    background-color: transparent;
+    border-color: lightblue;
+    color: lightblue;
+}
+
+.white-button {
+    background-color: mintcream;
+    color: darkcyan;
+    border-color: darkcyan;
+}
+
+.white-button:hover {
+    background-color: darkcyan;
+    border-color: lightblue;
+    color: mintcream;
+}
+
+.white-button:active {
+    background-color: transparent;
+    border-color: lightblue;
+    color: lightblue;
+}
+
+fieldset {
+    border: 2px solid darkcyan;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+legend {
+    color: darkcyan;
+    font-weight: bold;
+}
+
+fieldset input {
+    margin: 5px;
+    padding: 5px;
+    border: 2px solid darkcyan;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+fieldset input:focus {
+    outline: none;
+    border-color: lightblue;
+}
+
+p a, li a {
+    color: black;
+    text-decoration: underline;
+}
+
+.content h1 {
+    text-align: center;
+}
+
+.course-color-selector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.course-color-selector select {
+    width: 50%;
+}
+
+footer {
+    margin-top: auto;
+    justify-content: center;
+    padding: 10px;
+}
+
+footer a {
+    margin: 0 10px;
+    color: darkcyan;
+    text-decoration: none;
+}

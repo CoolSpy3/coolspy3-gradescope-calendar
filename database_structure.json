@@ -1,0 +1,44 @@
+{
+    "users": {
+        "$uid": {
+            "gradescope": {
+                "valid_auth": "boolean",
+                "token": "string",
+                "username": "string",
+                "password": "string"
+            },
+            "google": {
+                "refresh_token": "string",
+                "calendar_id": "string"
+            },
+            "settings": {
+                "courses": {
+                    "$course_id": {
+                        "name": "string",
+                        "color": "string",
+                        "href": "string"
+                    }
+                },
+                "completed_assignment_color": "string"
+            }
+        }
+    },
+    "assignments": {
+        "$uid": {
+            "lock": "boolean",
+            "cache": {
+                "$assignment_id": {
+                    "name": "string",
+                    "due_date": {
+                        "normal": "string",
+                        "late": "string"
+                    },
+                    "due_date_changed": "boolean",
+                    "completed": "boolean",
+                    "course_id": "string",
+                    "event_id": "string"
+                }
+            }
+        }
+    }
+}

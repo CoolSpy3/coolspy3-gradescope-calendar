@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Gradescope Calendar</title>
+        <meta charset="utf-8">
+        <meta name="author" content="CoolSpy3">
+        <meta name="description" content="Show Gradescope Assignments in Google Calendar">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="main.css">
+        <script defer src="/__/firebase/10.4.0/firebase-app-compat.js"></script>
+        <script defer src="/__/firebase/10.3.1/firebase-auth-compat.js"></script>
+        <script defer src="/__/firebase/10.3.1/firebase-database-compat.js"></script>
+        <script defer src="/__/firebase/10.3.1/firebase-functions-compat.js"></script>
+        <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+        <script defer src="/js/link-gradescope.js"></script>
+    </head>
+    <body>
+        <header>
+            <a href="/"><h1>Gradescope Calendar</h1></a>
+            <a id="login-button" href="/login">Signup / Login</a>
+        </header>
+        <div class="content">
+            <h1>How would you like to link your Gradescope Account?</h1>
+            <a href="/docs">Help Me Choose</a>
+            <fieldset>
+                <legend>Linking Method</legend>
+                <div>
+                    <input type="radio" id="link-by-token" name="link-method" value="token" onclick="linkByToken()">
+                    <label for="token">Link With Token (More Secure)</label>
+                </div>
+                <div>
+                    <input type="radio" id="link-by-password" name="link-method" value="password" onclick="linkByPassword()">
+                    <label for="password">Link With Password (Easier)</label>
+                </div>
+            </fieldset>
+            <fieldset id="token-link-parameters" hidden>
+                <legend>Token</legend>
+                <label for="token">Token:</label>
+                <input type="password" id="token" name="token" placeholder="Token">
+            </fieldset>
+            <fieldset id="password-link-parameters" hidden>
+                <legend>Login Details</legend>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="Email">
+                <br />
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Password">
+                <br />
+                <label for="store-credentials">Store Credentials (Not Recommended):</label>
+                <input type="checkbox" id="store-credentials" name="store-credentials">
+            </fieldset>
+            <p>Need help filling out this form? <a href="/docs" class="white-button">Read our Documentation</a></p>
+            <div class="button-container">
+                <button type="button" class="red-button" onclick="window.location.href = '/dashboard';">Cancel</button>
+                <button type="button" id="link-gradescope-button" class="blue-button" onclick="validateGradescopeCredentials()">Link Gradescope Account</button>
+            </div>
+        </div>
+        <footer>
+            <a href="/disclaimer">Disclaimer</a>
+            <a href="/privacy-policy">Privacy Policy / Terms of Use</a>
+            <a href="https://github.com/CoolSpy3/gradescope-calendar-web/">Contribute on GitHub</a>
+        </footer>
+    </body>
+</html>

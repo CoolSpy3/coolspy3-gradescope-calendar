@@ -1,0 +1,19 @@
+{
+    "name": "coolspy3-gradescope-calendar",
+    "version": "1.0.0",
+    "description": "Pulls assignment due dates from Gradescope and adds them to Google Calendar",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "gradescope",
+        "google-calendar"
+    ],
+    "author": "CoolSpy3",
+    "license": "MIT",
+    "dependencies": {
+        "firebase": "^10.3.1",
+        "firebaseui": "^6.1.0"
+    }
+}

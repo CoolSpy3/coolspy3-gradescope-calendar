@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Gradescope Calendar</title>
+        <meta charset="utf-8">
+        <meta name="author" content="CoolSpy3">
+        <meta name="description" content="Show Gradescope Assignments in Google Calendar">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="main.css">
+        <script defer src="/__/firebase/10.4.0/firebase-app-compat.js"></script>
+        <script defer src="/__/firebase/10.3.1/firebase-auth-compat.js"></script>
+        <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+        <script defer src="/js/main.js"></script>
+    </head>
+    <body>
+        <header>
+            <a href="/"><h1>Gradescope Calendar</h1></a>
+            <a id="login-button" href="/login">Signup / Login</a>
+        </header>
+        <div class="content">
+            <h1>FAQ</h1>
+            <h2>What is this website?</h2>
+            <p>
+                This is the frontend of a <a href="https://github.com/CoolSpy3/gradescope-calendar">Python script</a> I wrote to put my Gradescope Assignments
+                onto my Google Calendar. TODO: EXPLAIN TAGS IN CALENDAR description and TIMEZONES
+            </p>
+            <h2>The formatting is terrible! How do you expect anyone to use it?</h2>
+            <p>
+                Of all my skills, web design is not the best. This app is designed to be functional, not pretty.
+                If you want to help redesign it, feel free to <a href="https://github.com/CoolSpy3/gradescope-calendar-web/pulls">submit a pull request</a>.
+            </p>
+            <h2>How do I know this is a legit site?</h2>
+            <p>
+                All of the source code for this website is available on <a href="https://github.com/CoolSpy3/gradescope-calendar-web/">GitHub</a>.
+                I've also done my best to document the code and put descriptions of how data is used <a href="/privacy-policy">on this website</a>.
+            </p>
+            <h2>How do I use this website?</h2>
+            <p>
+                Click the <a href="/login">Signup / Login</a> button here or at the top of the page, and follow the instructions to link your Google and Gradescope accounts.
+            </p>
+            <h2>How do I remove this website's access to my accounts?</h2>
+            <p>
+                On your <a href="/dashboard">Account Dashboard</a>, click the button labeled <a href="/delete-my-account">Delete My Account</a> (or just click this link),
+                and you will be redirected to a page that will remove your account and all associated information from this website.
+                You will also be given instructions on how to de-authorize this website from your Google and Gradescope accounts.
+                TODO MOVE TEXT:
+                Go to <a href="https://myaccount.google.com/permissions">https://myaccount.google.com/permissions</a> and remove the "Gradescope Calendar" app.
+            </p>
+            <h2>What information do I need to provide to use this site?</h2>
+            <p>
+                See our <a href="/disclaimer">Disclaimer</a> and <a href="/privacy-policy">Privacy Policy</a> for more information.
+            </p>
+            <h2>How are you making money/paying for this site?</h2>
+            <p>
+                I am making great use of Firebase's <a href="https://firebase.google.com/pricing">free usage limits</a>.
+                The remaining usage rates are low enough that I've set a $1 price cap on the remaining usage (so please don't DDoS me).
+                If this site becomes popular, I will probably add a donation button to cover the hosting costs.
+                Ultimately, I plan to use this site myself, and I heard that others might be interested in the same service without the
+                hassle of <a href="https://github.com/CoolSpy3/gradescope-calendar">the standalone version</a>.
+                For the forseeable future, this will remain a free service. If it exceeds the usage cap, then it will be shut down until the next month.
+                Conversely, if this service goes mostly unused, I may decide to shut it down and/or stop maintaining it.
+            </p>
+            <h2>How do I report a bug?</h2>
+            <p>
+                To report a bug, please open an issue on this project's <a href="https://github.com/CoolSpy3/gradescope-calendar-web/">GitHub</a> page.
+            </p>
+        </div>
+        <footer>
+            <a href="/disclaimer">Disclaimer</a>
+            <a href="/privacy-policy">Privacy Policy / Terms of Use</a>
+            <a href="https://github.com/CoolSpy3/gradescope-calendar-web/">Contribute on GitHub</a>
+        </footer>
+    </body>
+</html>
