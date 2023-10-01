@@ -1,61 +1,39 @@
 {
     "rules": {
-        "users": {
+        ".read": false,
+        ".write": false,
+        "auth_status": {
             "$uid": {
-                ".read": false,
+                ".read": "auth != null && auth.uid == $uid"
+            }
+        },
+        "settings": {
+            "$uid": {
+                ".read": "auth != null && auth.uid == $uid",
                 ".write": "auth != null && auth.uid == $uid",
-                "gradescope": {
-                    "valid_auth": {
-                        ".read": "auth != null && auth.uid == $uid",
-                        ".validate": "newData.isBoolean()"
-                    },
-                    "token": {
-                        ".validate": "newData.isString()"
-                    },
-                    "username": {
-                        ".validate": "newData.isString()"
-                    },
-                    "password": {
-                        ".validate": "newData.isString()"
-                    },
-                    "$other": {
-                        ".validate": false
-                    }
-                },
-                "google": {
-                    "refresh_token": {
-                        ".validate": "newData.isString()"
-                    },
-                    "calendar_id": {
-                        ".read": "auth != null && auth.uid == $uid",
-                        ".validate": "newData.isString()"
-                    }
-                },
-                "settings": {
+                "calendar_id": {
                     ".read": "auth != null && auth.uid == $uid",
-                    "courses": {
-                        "$course_id": {
-                            ".validate": "data.exists()",
-                            "name": {
-                                ".validate": "newData.isString()"
-                            },
-                            "color": {
-                                ".validate": "newData.isString()"
-                            },
-                            "href": {
-                                ".validate": "newData.isString() && newData.val().matches(/^[\\/a-zA-Z0-9]+$/)"
-                            },
-                            "$other": {
-                                ".validate": false
-                            }
+                    ".validate": "newData.isString()"
+                },
+                "courses": {
+                    "$course_id": {
+                        ".validate": "data.exists()",
+                        "name": {
+                            ".validate": "newData.isString()"
+                        },
+                        "color": {
+                            ".validate": "newData.isString()"
+                        },
+                        "href": {
+                            ".validate": "newData.isString() && newData.val().matches(/^[\\/a-zA-Z0-9]+$/)"
+                        },
+                        "$other": {
+                            ".validate": false
                         }
-                    },
-                    "completed_assignment_color": {
-                        ".validate": "newData.isString()"
-                    },
-                    "$other": {
-                        ".validate": false
                     }
+                },
+                "completed_assignment_color": {
+                    ".validate": "newData.isString()"
                 },
                 "$other": {
                     ".validate": false

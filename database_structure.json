@@ -1,44 +1,48 @@
 {
-    "users": {
+    "assignments": {
         "$uid": {
-            "gradescope": {
-                "valid_auth": "boolean",
-                "token": "string",
-                "username": "string",
-                "password": "string"
-            },
-            "google": {
-                "refresh_token": "string",
-                "calendar_id": "string"
-            },
-            "settings": {
-                "courses": {
-                    "$course_id": {
-                        "name": "string",
-                        "color": "string",
-                        "href": "string"
-                    }
+            "$assignment_id": {
+                "name": "string",
+                "due_date": {
+                    "normal": "string",
+                    "late": "string"
                 },
-                "completed_assignment_color": "string"
+                "due_date_changed": "boolean",
+                "completed": "boolean",
+                "course_id": "string",
+                "event_id": "string"
             }
         }
     },
-    "assignments": {
+    "auth_status": {
         "$uid": {
-            "lock": "boolean",
-            "cache": {
-                "$assignment_id": {
-                    "name": "string",
-                    "due_date": {
-                        "normal": "string",
-                        "late": "string"
-                    },
-                    "due_date_changed": "boolean",
-                    "completed": "boolean",
-                    "course_id": "string",
-                    "event_id": "string"
-                }
+            "gradescope": "boolean",
+            "google": "boolean"
+        }
+    },
+    "credentials": {
+        "$uid": {
+            "gradescope": {
+                "token": "string",
+                "email": "string",
+                "password": "string"
+            },
+            "google": {
+                "token": "string"
             }
         }
-    }
+    },
+    "settings": {
+        "$uid": {
+            "calendar_id": "string",
+            "courses": {
+                "$course_id": {
+                    "name": "string",
+                    "color": "string",
+                    "href": "string"
+                }
+            },
+            "completed_assignment_color": "string"
+        }
+    },
 }

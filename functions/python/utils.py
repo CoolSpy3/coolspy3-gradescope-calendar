@@ -5,7 +5,7 @@ import re
 import xml.etree.ElementTree as ElementTree
 from lxml.etree import XMLParser
 from datetime import datetime
-from typing import Any, TypeVar, Callable, cast, Type
+from typing import Any, TypeVar, Callable, cast, Type, Tuple
 
 import aiohttp
 import requests
@@ -21,6 +21,10 @@ from google.oauth2.credentials import Credentials
 
 GRADESCOPE_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S %z"
 ILLEGAL_DATABASE_CHARS = "[\\$\\#\\[\\]\\/\\.\\\\]"
+GOOGLE_API_SCOPES = [
+    "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+    "https://www.googleapis.com/auth/calendar.events"
+]
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -47,18 +51,19 @@ def check_gradescope_token(token: Any) -> bool:
 
 
 def get_gradescope_token(uid: str) -> str | None:
-    if not db.reference(f'users/{uid}/gradescope/valid_auth').get():
+    if not db.reference(f'auth_status/{uid}/gradescope').get():
         return None
-    gradescope_token = db.reference(f'users/{uid}/gradescope/token').get()
+    gradescope_token = db.reference(f'credentials/{uid}/gradescope/token').get()
 
-    if not (gradescope_token := check_gradescope_token(gradescope_token)):
-        gradescope_username = get_db_ref_as_type(f'users/{uid}/gradescope/username', str)
-        gradescope_password = get_db_ref_as_type(f'users/{uid}/gradescope/password', str)
-        if gradescope_username and gradescope_password:
-            gradescope_token = login_to_gradescope(gradescope_username, gradescope_password)
+    if not check_gradescope_token(gradescope_token):
+        gradescope_token = None
+        gradescope_email = get_db_ref_as_type(f'credentials/{uid}/gradescope/email', str)
+        gradescope_password = get_db_ref_as_type(f'credentials/{uid}/gradescope/password', str)
+        if gradescope_email and gradescope_password:
+            gradescope_token, _ = login_to_gradescope(gradescope_email, gradescope_password) or (None, None)
 
         if not gradescope_token:
-            db.reference(f'users/{uid}/gradescope/valid_auth').set(False)
+            db.reference(f'auth_status/{uid}/gradescope').set(False)
             return None
 
     return gradescope_token
@@ -86,7 +91,7 @@ def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> lis
         return ElementTree.fromstring(response.content).findall(query)
 
 
-def login_to_gradescope(email: str, password: str) -> str | None:
+def login_to_gradescope(email: str, password: str) -> Tuple[str, str] | None:
     print(email, password)
     session = requests.Session()
     with session.get("https://www.gradescope.com/login") as response:
@@ -103,7 +108,7 @@ def login_to_gradescope(email: str, password: str) -> str | None:
         "authenticity_token": authenticity_token,
         "session[email]": email,
         "session[password]": password,
-        "session[remember_me]": "0",
+        "session[remember_me]": "1",
         "commit": "Log In",
         "session[remember_me_sso]": "0",
     }
@@ -113,7 +118,8 @@ def login_to_gradescope(email: str, password: str) -> str | None:
         print(response.cookies)
         if response.status_code != 302 or response.headers.get("location", '') != "https://www.gradescope.com/account":
             return None  # Invalid credentials
-        return response.cookies.get("signed_token")
+        token_cookie = response.cookies.get("signed_token", None)
+        return (token_cookie.value, token_cookie.expires.isoformat()) if token_cookie else None
 
 
 # endregion
@@ -121,29 +127,28 @@ def login_to_gradescope(email: str, password: str) -> str | None:
 # region Google
 
 def login_to_google(uid: str, oauth2_client_id: SecretParam, oauth2_client_secret: SecretParam) -> Any:
-    refresh_token = get_db_ref_as_type(f'users/{uid}/google/refresh_token', str)
-    if not refresh_token or refresh_token == "invalid":
+    if not db.reference(f'auth_status/{uid}/google').get():
         return None
 
-    scopes = [
-        "https://www.googleapis.com/auth/calendar.calendarlist",
-        "https://www.googleapis.com/auth/calendar.calendars",
-        "https://www.googleapis.com/auth/calendar.events"
-    ]
+    refresh_token = get_db_ref_as_type(f'credentials/{uid}/google/token', str)
+    if not refresh_token:
+        db.reference(f'auth_status/{uid}/google').set(False)
+        return None
+
     credentials = Credentials(
         token=None,
         refresh_token=refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=oauth2_client_id.value,
         client_secret=oauth2_client_secret.value,
-        scopes=scopes
+        scopes=GOOGLE_API_SCOPES
     )
     try:
         credentials.refresh(Request())
     except RefreshError:
-        db.reference(f'users/{uid}/google/refresh_token').set("invalid")
+        db.reference(f'auth_status/{uid}/google').set(False)
         return None
-    db.reference(f'users/{uid}/google/refresh_token').set(credentials.refresh_token)
+    db.reference(f'credentials/{uid}/google/token').set(credentials.refresh_token)
 
     return credentials
 
@@ -280,7 +285,7 @@ def update_gradescope_assignment(assignment: Assignment, old_assignment: Assignm
 
 
 def get_calendar_id(uid: str) -> str | None:
-    calendar_id = get_db_ref_as_type(f'users/{uid}/google/calendar_id', str)
+    calendar_id = get_db_ref_as_type(f'settings/{uid}/calendar_id', str)
 
     if isinstance(calendar_id, str) and calendar_id != "invalid":
         return calendar_id
@@ -300,7 +305,7 @@ def validate_calendar_id(calendar_id: str, calendar_service: Any) -> bool:
 
 
 def get_user_settings(uid: str) -> UserSettings | None:
-    user_settings = get_db_ref_as_type(f'users/{uid}/settings', UserSettings)
+    user_settings = get_db_ref_as_type(f'settings/{uid}', UserSettings)
     if validate_object_with_keys(user_settings, "courses", "completed_assignment_color"):
         return user_settings
     return None

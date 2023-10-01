@@ -52,7 +52,7 @@ firebase.auth().onAuthStateChanged((user) => {
                         calendarSelector.appendChild(option);
                     });
 
-                    firebase.database().ref("users/" + user.uid + "/google/calendar_id").get()
+                    firebase.database().ref("settings/" + user.uid + "/calendar_id").get()
                     .then(calendarId => {
                         if (calendarId.exists()) {
                             const calendarIdVal = calendarId.val();
@@ -62,7 +62,7 @@ firebase.auth().onAuthStateChanged((user) => {
                             calendarSelector.value = calendarSelector.value;
                             // If the value changed, update the database
                             if(calendarSelector.value !== calendarIdVal) {
-                                firebase.database().ref("users/" + user.uid + "/google/calendar_id").set(calendarSelector.value);
+                                firebase.database().ref("settings/" + user.uid + "/calendar_id").set(calendarSelector.value);
                             }
                         }
                     }).catch(error => {
@@ -73,7 +73,7 @@ firebase.auth().onAuthStateChanged((user) => {
                 });
 
                 Promise.all([
-                    firebase.database().ref("users/" + user.uid + "/settings/courses").get().then(courses => courses.val()),
+                    firebase.database().ref("settings/" + user.uid + "/courses").get().then(courses => courses.val()),
                     gapi.client.calendar.colors.get().then(colors => colors.result.event)
                 ]).then(([courses, colors]) => {
                     if (!("1" in colors)) {
@@ -102,7 +102,7 @@ firebase.auth().onAuthStateChanged((user) => {
                     }
 
                     const completedAssignmentColorSelector = document.getElementById("completed-assignment-color-selector");
-                    firebase.database().ref("users/" + user.uid + "/settings/completed_assignment_color").get().then(ref => ref.val())
+                    firebase.database().ref("settings/" + user.uid + "/completed_assignment_color").get().then(ref => ref.val())
                         .then(completed_assignment_color => {
                         if(completed_assignment_color && !(completed_assignment_color in colors)) {
                             completed_assignment_color = "1";
@@ -150,7 +150,7 @@ firebase.auth().onAuthStateChanged((user) => {
             });
         });
 
-        firebase.database().ref("users/" + user.uid + "/gradescope/valid_auth").get().then(ref => ref.val())
+        firebase.database().ref("auth_status/" + user.uid + "/gradescope").get().then(ref => ref.val())
         .then(isAuthValid => {
             if(isAuthValid) {
                 const linkGradescopeButton = document.getElementById("link-gradescope-button");
@@ -217,16 +217,12 @@ function refreshEvents() {
 }
 
 function saveSettings() {
-    firebase.database().ref("users/" + user.uid + "/google/calendar_id").set(document.getElementById("calendar-selector").value, error => {
-        if(!error) {
-            return;
-        }
-        dashboardErrorHandler(error, "An error occurred saving your calendar selection.");
-    });
-    let courses = {};
     let newSettings = {
+        calendar_id: document.getElementById("calendar-selector").value,
         completed_assignment_color: document.getElementById("completed-assignment-color-selector").value
     }
+
+    let courses = {};
     for (const courseSelector of document.getElementById("course-color-selectors").children) {
         if(courseSelector.children.length < 2 || courseSelector.children[1].id === "completed-assignment-color-selector") {
             continue;
@@ -234,6 +230,7 @@ function saveSettings() {
         const courseId = courseSelector.children[1].id.replace("course-color-selector-", "");
         newSettings["courses/" + courseId + "/color"] = courseSelector.children[1].value;
     }
+
     firebase.database().ref("users/" + user.uid + "/settings").update(newSettings, error => {
         if(!error) {
             return;
@@ -244,7 +241,7 @@ function saveSettings() {
 }
 
 function downloadData() {
-    firebase.database().ref("users/" + user.uid + "/settings").get()
+    firebase.database().ref("settings/" + user.uid).get()
     .then(settings => {
         downloadObjectAsJson(settings.val(), "user-settings");
     })
