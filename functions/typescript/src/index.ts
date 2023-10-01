@@ -6,6 +6,8 @@ initializeApp();
 export const onUserDelete = auth.user().onDelete((user) => {
     return database().ref("/").update({
         [`assignments/${user.uid}`]: null,
-        [`users/${user.uid}`]: null,
+        [`auth_status/${user.uid}`]: null,
+        [`credentials/${user.uid}`]: null,
+        [`settings/${user.uid}`]: null,
     });
 });
