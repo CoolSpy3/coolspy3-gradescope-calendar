@@ -20,7 +20,6 @@ from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
 
 GRADESCOPE_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S %z"
-ILLEGAL_DATABASE_CHARS = "[\\$\\#\\[\\]\\/\\.\\\\]"
 GOOGLE_API_SCOPES = [
     "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
     "https://www.googleapis.com/auth/calendar.events"
@@ -232,8 +231,7 @@ async def enumerate_gradescope_assignments(course_settings: CourseList, gradesco
 
 async def fetch_course_assignments(course_id: str, course: Course, session: aiohttp.ClientSession) -> AssignmentList:
     assignments = {
-        f'{course_id}-{re.sub(ILLEGAL_DATABASE_CHARS, "", get_assignment_name(assignment))}':
-            parse_assignment(assignment, course_id)
+        f'{course_id}-{get_assignment_id(assignment)}': parse_assignment(assignment, course_id)
         for assignment in
         await get_async_data_from_gradescope(course["href"], ".//table[@id='assignments-student-table']/tbody/tr",
                                              session)
@@ -242,10 +240,21 @@ async def fetch_course_assignments(course_id: str, course: Course, session: aioh
     # Filter out assignments that don't have a due date or were parsed incorrectly
     assignments = {
         assignment_id: assignment for assignment_id, assignment in assignments.items() if
-        isinstance(assignment, dict) and assignment["due_date"]
+        isinstance(assignment, dict) and assignment["due_date"] and not assignment_id.endswith("-Unknown")
     }
 
     return assignments
+
+
+def get_assignment_id(assignment: ElementTree.Element) -> str:
+    if assignment.tag == "button":
+        return assignment.get("data-assignment-id", "Unknown")
+    elif assignment.tag == "a":
+        href = assignment.get("href", "")
+        if match := re.search(r'/assignments/(\d+)', href):
+            return match.group(1)
+
+    return "Unknown"
 
 
 def get_assignment_name(assignment: ElementTree.Element) -> str:
@@ -310,6 +319,8 @@ def get_user_settings(uid: str) -> UserSettings | None:
         return user_settings
     return None
 
+
+# endregion
 
 # region Util
 
