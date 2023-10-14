@@ -231,23 +231,25 @@ function saveSettings() {
         newSettings["courses/" + courseId + "/color"] = courseSelector.children[1].value;
     }
 
-    firebase.database().ref("users/" + user.uid + "/settings").update(newSettings, error => {
+    firebase.database().ref("settings/" + user.uid).update(newSettings, error => {
         if(!error) {
+            alert("Your settings have been saved!");
             return;
         }
         dashboardErrorHandler(error, "An error occurred saving your settings.");
     });
-    alert("Your settings have been saved!");
 }
 
 function downloadData() {
-    firebase.database().ref("settings/" + user.uid).get()
-    .then(settings => {
-        downloadObjectAsJson(settings.val(), "user-settings");
-    })
-    .catch(error => {
-        dashboardErrorHandler(error, "An error occurred downloading your settings.");
-    });
+    function download(ref, name, description) {
+        firebase.database().ref(ref).get().then(snapshot => snapshot.val()).then(data => {
+            downloadObjectAsJson(data, name);
+        }).catch(error => {
+            dashboardErrorHandler(error, "An error occurred downloading your " + description + ".");
+        });
+    }
+    download("auth_status/" + user.uid, "auth-status", "list of signed-in accounts");
+    download("settings/" + user.uid, "user-settings", "settings");
 }
 
 function deleteAccount() {
