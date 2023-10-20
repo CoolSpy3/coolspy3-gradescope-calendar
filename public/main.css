@@ -57,7 +57,7 @@ h1 {
     padding: 10px;
 }
 
-.content {
+#content {
     margin: 10px 30px;
 }
 
@@ -167,7 +167,7 @@ p a, li a {
     text-decoration: underline;
 }
 
-.content h1 {
+#content h1 {
     text-align: center;
 }
 
@@ -180,6 +180,19 @@ p a, li a {
 
 .course-color-selector select {
     width: 50%;
+}
+
+nav#sidebar {
+    width: fit-content;
+}
+
+nav#sidebar ol {
+    margin: 0;
+    padding: 0;
+}
+
+nav#sidebar * ol {
+    list-style-type: none;
 }
 
 footer {

@@ -17,59 +17,126 @@
             <a href="/"><h1>Gradescope Calendar</h1></a>
             <a id="login-button" href="/login">Signup / Login</a>
         </header>
-        <div class="content">
+        <nav id="sidebar">
+            <ol>
+                <li><a href="#section-how-to-use">How to use</a></li>
+                <li>
+                    <ol>
+                        <li><a href="#section-how-to-use-logging-in">Logging In</a></li>
+                        <li><a href="#section-how-to-use-dashboard">Your Account Dashboard</a></li>
+                        <li>
+                            <ol>
+                                <li><a href="#section-how-to-use-dashboard-refresh-courses">Refresh Course List</a></li>
+                                <li><a href="#section-how-to-use-dashboard-update-events">Update Calendar Events</a></li>
+                                <li><a href="#section-how-to-use-dashboard-save-settings">Save Changes</a></li>
+                                <li><a href="#section-how-to-use-dashboard-download-data">Download My Data</a></li>
+                                <li><a href="#section-how-to-use-dashboard-delete-account">Delete My Account</a></li>
+                                <li><a href="#section-how-to-use-dashboard-settings">Settings</a></li>
+                                <li>
+                                    <ol>
+                                        <li><a href="#section-how-to-use-dashboard-settings-calendar">Calendar</a></li>
+                                        <li><a href="#section-how-to-use-dashboard-settings-completed-assignment-color">Completed Assignment Color</a></li>
+                                        <li><a href="#section-how-to-use-dashboard-setings-color">Course Colors</a></li>
+                                    </ol>
+                                </li>
+                            </ol>
+                        </li>
+                        <li><a href="#section-how-to-use-linking-gradescope">Linking Your Gradescope Account</a></li>
+                        <li>
+                            <ol>
+                                <li><a href="#section-how-to-use-linking-gradescope-token">With a Gradescope Token (More Secure, More Difficult)</a></li>
+                                <li><a href="#section-how-to-use-linking-gradescope-password">With Your Gradescope Username and Password (Less Secure, Easier)</a></li>
+                                <li>
+                                    <ol>
+                                        <li><a href="#section-how-to-use-linking-gradescope-password-add-password">My School Forces Me to Log In to Gradescope with School Credentials/Google</a></li>
+                                    </ol>
+                                </li>
+                            </ol>
+                        </li>
+                    </ol>
+                </li>
+                <li><a href="#section-implementation">How the Site Works</a></li>
+                <li>
+                    <ol>
+                        <li><a href="#section-implementation-hosting">Hosting</a></li>
+                        <li><a href="#section-implementation-data-storage">How is Data Stored?</a></li>
+                        <li>
+                            <ol>
+                                <li><a href="#section-implementation-data-storage-assignment-cache">Assignment Cache</a></li>
+                                <li><a href="#section-implementation-data-storage-auth-status">Auth Status</a></li>
+                                <li><a href="#section-implementation-data-storage-credentials">Credentials</a></li>
+                                <li><a href="#section-implementation-data-storage-settings">Settings</a></li>
+                            </ol>
+                        </li>
+                        <li><a href="#section-implementation-implementation">How the Code Works</a></li>
+                        <li>
+                            <ol>
+                                <li><a href="#section-implementation-implementation-gradescope">Fetching from Gradescope</a></li>
+                                <li><a href="#section-implementation-implementation-google">Updating the Calendar</a></li>
+                            </ol>
+                        </li>
+                    </ol>
+                </li>
+            </ol>
+        </nav>
+        <div id="content">
             <h1>Documentation</h1>
             <p>Welcome to the docs page! This page will explain how to use this site as well as how it works.</p>
-            <h2>How to use</h2>
-            <h3>Logging In</h3>
+            <h2 id="section-how-to-use">How to use</h2>
+            <h3 id="section-how-to-use-logging-in">Logging In</h3>
             <p>To log in to the site, simply press the login button in the top corner of the screen</p>
-            <img src="" alt="TODO">
+            <img src="images/login-button-location.jpg" alt="Login Button Location">
             <p>
                 You will then be prompted to log in with your Google account. If this is your first time logging in,
                 you may also be prompted to log in again with the same account in order to authorize our server to
-                access your Google Calendar. <a href="TODO">Why is this?</a>
+                access your Google Calendar. <a href="#section-implementation-hosting">Why is this?</a>
             </p>
-            <h3>Your Account Dashboard</h3>
+            <h3 id="section-how-to-use-dashboard">Your Account Dashboard</h3>
             <img src="" alt="TODO">
             <p>
                 Your account dashboard is where you can manage your account. The first thing you should do after creating
                 your account is to press the button to link your Gradescope account. This will allow us to access your
-                Gradescope assignments. (See: <a href="TODO">Linking Your Gradescope Account</a>) There are five other
-                buttons on the page:
+                Gradescope assignments. (See: <a href="#section-how-to-use-linking-gradescope">Linking Your Gradescope Account</a>)
+                There are five other buttons on the page:
             </p>
-            <h4>Refresh Course List</h4>
+            <h4 id="section-how-to-use-dashboard-refresh-courses">Refresh Course List</h4>
             <p>
-                Gradescope Calendar does not automatically update your course list (<a href="TODO">Why is this?</a>).
-                After you link your Gradescope account, you will need to press this button to load your course list from
-                Gradescope. Gradescope Calendar will only load courses for which you are currently enrolled.
+                Gradescope Calendar does not automatically update your course list
+                (<a href="#section-implementation-hosting">Why is this?</a>). After you link your Gradescope account, you
+                will need to press this button to load your course list from Gradescope. Gradescope Calendar will only load
+                courses for which you are currently enrolled.
             </p>
-            <h4>Update Calendar Events</h4>
+            <h4 id="section-how-to-use-dashboard-update-events">Update Calendar Events</h4>
             <p>
                 Gradescope Calendar automatically fetches your assignments from Gradescope <a href="">TODO  times per day</a>.
                 If you want to update your calendar immediately, you can press this button to force an update. Additionally,
                 because <a href="TODO">we don't have a way to automatically inform you about problems with your account</a>,
                 pressing this button will show a popup if an error occurs while updating your calendar.
             </p>
-            <h4>Save Changes</h4>
+            <h4 id="section-how-to-use-dashboard-save-settings">Save Changes</h4>
             <p>
-                This button saves any changes you've made to your settings. See: <a href="TODO">Settings</a>
+                This button saves any changes you've made to your settings.
+
+                See: <a href="#section-how-to-use-dashboard-settings">Settings</a>
             </p>
-            <h4>Download My Data</h4>
+            <h4 id="section-how-to-use-dashboard-download-data">Download My Data</h4>
             <p>
                 This button downloads a copy of the available data we have about you. Note that for security reasons, some
                 of your data (such as your Google/Gradescope account information) is not accessible from the client side,
-                and therefore cannot be downloaded. See: <a href="TODO">Privacy Policy</a> and <a href="TODO">How is data stored?</a>
+                and therefore cannot be downloaded.
+
+                See: <a href="/privacy-policy">Privacy Policy</a> and <a href="#section-implementation-data-storage">How is data stored?</a>
             </p>
-            <h4>Delete My Account</h4>
+            <h4 id="section-how-to-use-dashboard-delete-account">Delete My Account</h4>
             <p>
-                This button deletes your account and all associated data from our servers. See: <a href="TODO">Privacy Policy</a>
+                This button deletes your account and all associated data from our servers. See: <a href="/privacy-policy">Privacy Policy</a>
             </p>
-            <h4>Settings</h4>
+            <h4 id="section-how-to-use-dashboard-settings">Settings</h4>
             <p>
                 The bulk of your account dashboard is the settings menu. It allows you to customize how Gradescope Calendar works for you.
                 There are three settings you can change:
             </p>
-            <h5>Calendar</h5>
+            <h5 id="section-how-to-use-dashboard-settings-calendar">Calendar</h5>
             <p>
                 This setting allows you to choose which Google calendar Gradescope Calendar will put your assignments in.
                 You can select any calendar which you have write access to. Personally, I recommend
@@ -77,18 +144,18 @@
                 for Gradescope assignments, but you can use any calendar you want. If you do not select a calendar,
                 Gradescope Calendar will not add any events to your calendar.
             </p>
-            <h5>Completed Assignment Color</h5>
+            <h5 id="section-how-to-use-dashboard-settings-completed-assignment-color">Completed Assignment Color</h5>
             <p>
                 This setting allows you to choose the color of assignments that you have turned in. If you do not
                 select a color, completed assignments will not be colored differently from incomplete assignments.
             </p>
-            <h5>Course Colors</h5>
+            <h5 id="section-how-to-use-dashboard-setings-color">Course Colors</h5>
             <p>
                 You can also choose the color of assignments for each course. To do so, select the color dropdown next
                 to the course name. At the moment, you cannot not select a color for a course. If this feature is important
                 to people, I can add it in the future.
             </p>
-            <h3>Linking Your Gradescope Account</h3>
+            <h3 id="section-how-to-use-linking-gradescope">Linking Your Gradescope Account</h3>
             <p>
                 In order to access your Gradescope assignments, you must link your Gradescope account. To do so,
                 press the "Link Gradescope Account" button on your account dashboard. Unsurprisingly, Gradescope is not
@@ -96,25 +163,28 @@
                 log you in through Gradescope. Instead, you can log in to Gradescope through our site with one of two
                 methods:
             </p>
-            <h4>With a Gradescope Token (More Secure, More Difficult)</h4>
+            <h4 id="section-how-to-use-linking-gradescope-token">With a Gradescope Token (More Secure, More Difficult)</h4>
             <p>
                 This method involves extracting your gradescope token from your browser's cookies and pasting it into
                 our site. This method is more secure because it does not require you to enter your Gradescope password,
                 so our site never has access to your password. However, it requires you to go through DevTools to get
                 the token. To do so, follow these steps:
             </p>
-            <ol> TODO: UPDATE THIS
+            <ol>
                 <li>Open Gradescope in your browser</li>
                 <li>Open DevTools (Ctrl+Shift+I on Windows/Linux, Cmd+Shift+I on Mac)</li>
                 <li>Go to the "Application" tab</li>
                 <li>Expand the "Cookies" dropdown</li>
                 <li>Click on "https://www.gradescope.com"</li>
-                <li>Find the "token" cookie</li>
+                <li>Find the "signed_token" cookie</li>
+                <li>Make sure "Show URL-decoded" is checked (As far a I can tell this is specific to chromium-based browsers.
+                    On Firefox/other browsers, you will have to decode the string by hand or use an online decoder.)</li>
                 <li>Copy the value of the cookie</li>
                 <li>Paste the value into the Gradescope Token field on our site</li>
                 <li>Press the "Link Gradescope Account" button</li>
             </ol>
-            <h4>With Your Gradescope Username and Password (Less Secure, Easier)</h4>
+            <img src="images/gradescope-token-extraction.jpg" alt="Gradescope Token Extraction">
+            <h4 id="section-how-to-use-linking-gradescope-password">With Your Gradescope Username and Password (Less Secure, Easier)</h4>
             <p>
                 This method involves entering your Gradescope username and password into our site. This method is less
                 secure because it requires your Gradescope password to be sent to our backend for processing. (Browsers
@@ -133,20 +203,24 @@
                 you can delete them at any time by relinking your account and unchecking the "Store Credentials" box,
                 linking your account with a token, or deleting your account.
             </p>
-            <h5>My School Forces Me to Log In to Gradescope with School Credentials/Google</h5>
+            <h5 id="section-how-to-use-linking-gradescope-password-add-password">My School Forces Me to Log In to Gradescope with School Credentials/Google</h5>
             <p>
                 In my experience, even if your school forces you to log in to Gradescope with your school credentials,
                 you can still add a password login to your account. To do so, follow these steps:
             </p>
-            <ol> TODO: UPDATE THIS
+            <ol>
                 <li>Log in to Gradescope with your school credentials</li>
                 <li>Go to your account settings</li>
-                <li>Click "Add Password Login"</li>
-                <li>Enter a password</li>
-                <li>Log out of Gradescope</li>
-                <li>Log in to Gradescope with your email and password</li>
+                <li>
+                    Verify your email if you have not already (I'm not sure if this is a necessary step, but better safe than sorry)
+                    As far as I can tell, if you have multiple email addresses associated with your account, you can use any of them in your login.
+                </li>
+                <li>Fill in the fields to change your password</li>
+                <li>Press the "Save Changes" button</li>
+                <li>Your email-address/password combination can now be used to log into your Gradescope account</li>
             </ol>
-            <h2>How the Site Works</h2>
+            <img src="images/gradescope-add-password.jpg" alt="Gradescope Add Password">
+            <h2 id="section-implementation">How the Site Works</h2>
             <p>
                 This site is a frontend for a <a href="https://github.com/CoolSpy3/gradescope-calendar">Python script</a>
                 I wrote to put my Gradescope Assignments onto my Google Calendar. This site simplifies the process of
@@ -155,7 +229,7 @@
                 it is changed on Gradescope) are not available in the standalone script.
 
             </p>
-            <h3>Hosting</h3>
+            <h3 id="section-implementation-hosting">Hosting</h3>
             <p>
                 Ultimately, the site is hosted on <a href="https://firebase.google.com/">Google Firebase</a>, which provides
                 an extensive enough free tier that I can host this site without too many API costs. Ideally, I would host
@@ -166,7 +240,7 @@
                 down and/or stop maintaining it. Additionally, if this site becomes widely popular, I may have to look into
                 adding a donation button to cover the hosting costs.
 
-                In order to make sure that the site does not exceed the usage cap, I have done my best to optimise the
+                In order to make sure that the site does not exceed the usage cap, I have done my best to optimize the
                 site's backend to minimize API calls and backend processing. This means that I perform more processing
                 in the browser than I would if I were hosting the site myself (you shouldn't notice anything though),
                 I have chosen to not implement features which would require more backend support (ex. more frequent
@@ -178,7 +252,7 @@
                 Even so, the backend is designed to isolate operations done on different accounts, so sending malformed
                 data should only affect your user account.
             </p>
-            <h3>How is Data Stored?</h3>
+            <h3 id="section-implementation-data-storage">How is Data Stored?</h3>
             <p>
                 All data is stored in a <a href="https://firebase.google.com/docs/database">Firebase Realtime Database</a>.
                 The database is structured into a couple sections depending on the type of data. Each of these then has
@@ -186,9 +260,10 @@
                 and the accessible data on the frontend is limited to the data for the currently signed-in user.
 
                 Sections with read access for signed-in users can be downloaded from the frontend by pressing the
-                "Download My Data" button on the <a href="TODO">account dashboard</a>.
+                "<a href="#section-how-to-use-dashboard-download-data">Download My Data</a>" button on the
+                <a href="section-how-to-use-dashboard">account dashboard</a>.
             </p>
-            <h4>Assignment Cache</h4>
+            <h4 id="section-implementation-data-storage-assignment-cache">Assignment Cache</h4>
             <p>
                 Access Control: Only accessible from backend
 
@@ -196,21 +271,21 @@
                 each user's calendar as well as the state of each assignment. This allows the backend to only send API
                 calls to Google Calendar when necessary.
             </p>
-            <h4>Auth Status</h4>
+            <h4 id="section-implementation-data-storage-auth-status">Auth Status</h4>
             <p>
                 Access Control: Read-only for signed-in users
 
                 This section of the database is used to keep track of which accounts (Google/Gradescope) are successfully
                 linked to each user's account. This allows the frontend to display the correct information to the user.
             </p>
-            <h4>Credentials</h4>
+            <h4 id="section-implementation-data-storage-credentials">Credentials</h4>
             <p>
                 Access Control: Only accessible from backend
 
                 This section of the database is used to store the token and credentials for each user's Gradescope account
                 as well as the token issued by Google to access their calendar.
             </p>
-            <h4>Settings</h4>
+            <h4 id="section-implementation-data-storage-settings">Settings</h4>
             <p>
                 Access Control: Read-write for signed-in users
 
@@ -218,28 +293,28 @@
                 the correct information and update it on request. It also allows the backend to know how to process each
                 user's data. This is also where your course list is stored.
             </p>
-            <h3>How it Works</h3>
+            <h3 id="section-implementation-implementation">How the Code Works</h3>
             <p>
                 Google Firebase places a limit on the runtime of backend functions, so in order to make sure that the
                 backend is fast enough to scale (at least in the short-mid term), I've divided the backend into two
                 main functions. One which fetches new data from Gradescope and one which updates the calendar. The
-                two functions run TODO times per day offset from each other by 30 minutes (TODO EXPLAIN). The two functions
-                communicate through the <a href="TODO">assignment cache</a>. This keeps track of which assignments each
-                user has, their status, and whether they've been added to the calendar.
+                two functions run 4 times per day offset from each other by 30 minutes. The two functions communicate
+                through the <a href="#section-implementation-data-storage-assignment-cache">assignment cache</a>. This
+                keeps track of which assignments each user has, their status, and whether they've been added to the calendar.
 
                 The basic flow of the backend is as follows:
             </p>
-            <h4>Fetching from Gradescope</h4>
+            <h4 id="section-implementation-implementation-gradescope">Fetching from Gradescope</h4>
             <p>
                 In order to fetch data from Gradescope, the backend first enumerates the list of courses which have been
-                associated with the given user (See: <a href="TODO">Update Course List</a>). For each course, it then
-                retrieves the assignment's id, name, due date, and whether it's been turned in. It then compares this
-                to the user's assignment cache. Firstly, any assignments in the cache which are not part of an active
-                course and any assignments which are completed but not in the cache are discarded. Then, any assignments
-                which are not in the cache are added to it. Finally, all assignments already in the cache are updated
-                with the new data.
+                associated with the given user (See: <a href="#section-how-to-use-dashboard-refresh-courses">Refresh Course List</a>).
+                For each course, it then retrieves the assignment's id, name, due date, and whether it's been turned in.
+                It then compares this to the user's assignment cache. Firstly, any assignments in the cache which are not
+                part of an active course and any assignments which are completed but not in the cache are discarded. Then,
+                any assignments which are not in the cache are added to it. Finally, all assignments already in the cache are
+                updated with the new data.
             </p>
-            <h4>Updating the Calendar</h4>
+            <h4 id="section-implementation-implementation-google">Updating the Calendar</h4>
             <p>
                 In order to update the calendar, the backend first retrieves the user's assignment cache. It then
                 runs through the list applying the following logic to each assignment:
@@ -249,11 +324,11 @@
                 <li>If the assignment is associated with an event and has been updated with new data, the event is updated</li>
                 <li>If the assignment is marked as completed, it is removed from the cache</li>
             </ol>
-          </div>
-          <footer>
-              <a href="/disclaimer">Disclaimer</a>
-              <a href="/privacy-policy">Privacy Policy / Terms of Use</a>
-              <a href="https://github.com/CoolSpy3/gradescope-calendar-web/">Contribute on GitHub</a>
-          </footer>
+        </div>
+        <footer>
+            <a href="/disclaimer">Disclaimer</a>
+            <a href="/privacy-policy">Privacy Policy / Terms of Use</a>
+            <a href="https://github.com/CoolSpy3/gradescope-calendar-web/">Contribute on GitHub</a>
+        </footer>
     </body>
 </html>
