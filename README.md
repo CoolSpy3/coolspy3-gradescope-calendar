@@ -3,7 +3,7 @@ This project is the web continuation of [CoolSpy3/gradescope-calendar](https://g
 
 Originally, I was planning to wait until this project was finished before putting it on GitHub, but I plan to be on vacation for a few days, so I decided to put it up now so that I can work on it while I'm away if I have time. The code should be fairly close to the final state. At this point, I just have to finish writing some documentation before I can deploy it.
 
-For information on how to use the site and how the implementation works on a high level, please read [our docs page (coming soon)](about:blank).
+For information on how to use the site and how the implementation works on a high level, please read [this project's wiki](https://github.com/CoolSpy3/coolspy3-gradescope-calendar/wiki/)
 
 ## Project Layout
 Here is a basic overview of the project layout. I've tried to list the main directories and files, but I've left out some of the less important ones.
