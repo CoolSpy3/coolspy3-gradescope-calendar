@@ -19,7 +19,7 @@ Here is a basic overview of the project layout. I've tried to list the main dire
   |     \- src
   |        \- index.ts - Typescript function code
   |
-  |-public - Static website code (HTML, CSS, JS, Images, etc.)
+  |- public - Static website code (HTML, CSS, JS, Images, etc.)
   |  |- css
   |  \- js
   |
