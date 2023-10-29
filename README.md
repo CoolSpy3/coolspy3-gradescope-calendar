@@ -11,19 +11,21 @@ Here is a basic overview of the project layout. I've tried to list the main dire
 - ./
   |- functions - Firebase Cloud Functions
   |  |- python - Python functions (Fetching Gradescope data and pushing to Google Calendar)
-  |  |  |- main.py - Main functions and top-level code
+  |  |  |- main.py          - Main functions and top-level code
   |  |  |- requirements.txt - Python dependencies
-  |  |  \- utils.py - Helper functions
+  |  |  \- utils.py         - Helper functions
+  |  |
   |  \- typescript - TypeScript functions (User deletion)
   |     \- src
-  |        |- index.ts - Typescript function code
+  |        \- index.ts - Typescript function code
+  |
   |-public - Static website code (HTML, CSS, JS, Images, etc.)
   |  |- css
-  |  |- images
   |  \- js
+  |
   |- database_structure.json - Firebase Realtime Database structure
-  |  (This is for reference purposes only. It is not used by firebase.)
-  \- firebase.json - Firebase configuration
+  |                            (This is for reference purposes only. It is not used by firebase.)
+  \- firebase.json           - Firebase configuration
 
 ```
 
