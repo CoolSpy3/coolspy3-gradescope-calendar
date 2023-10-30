@@ -27,19 +27,12 @@
             <h2>What data we collect and why</h2>
             <p>
                 We collect:
-                <ul>
-                    <li>A token to access your Google Calendar - To add assignments from Gradescope</li>
-                    <li>Your Gradescope credentials/token - To access Gradescope on your behalf and download your assignments</li>
-                    <li>Your email - To notify you if something important happens. Ex:
-                        <ul>
-                            <li>We're hacked</li>
-                            <li>Your tokens stop working</li>
-                            <li>We're rolling out an update and we'll break some features/configuration of your account</li>
-                            <li>etc.</li>
-                        </ul>
-                    </li>
-                </ul>
+
             </p>
+            <ul>
+                <li>A token to access your Google Calendar - To add assignments from Gradescope</li>
+                <li>Your Gradescope credentials/token - To access Gradescope on your behalf and download your assignments</li>
+            </ul>
             <h2>How long we keep your data</h2>
             <p>
                 We keep your data until you delete your account. If you delete your account, we will delete all of your data from our servers.
@@ -51,13 +44,15 @@
             <h2>I want to delete or download my data</h2>
             <p>
                 There are buttons for this on the <a href="/dashboard">Account Dashboard</a>. For your security, some information you provide
-                (your Google and Gradescope Credentials) is not accessible from the frontend and will not be included in your data download.
+                (ex. your Google and Gradescope Credentials) is not accessible from the frontend and will not be included in your data download.
                 It will still be deleted upon account deletion.
             </p>
             <h2>How we store your data</h2>
             <p>
                 All data on this site is stored on Google Firebase which is configured with security rules to prevent unauthorized access.
                 This basically means enforcing the rule: <code>user data can only be accessed by the user and the system backend</code>.
+
+                For more information, see the <a href="https://github.com/CoolSpy3/coolspy3-gradescope-calendar/wiki/2.-How-the-site-works#how-is-data-stored">How is data stored?</a> section of our wiki.
             </p>
             <h2>A note about cookies</h2>
             <p>
@@ -68,17 +63,17 @@
             <p>
                 Please read the <a href="/disclaimer">Disclaimer</a> before using the app.
                 This app is meant as a helpful tool for students. Please do not abuse it. This means:
-                <ul>
-                    <li>Don't spam requests to the server (This will just trigger the data cap and ruin it for everyone)</li>
-                    <li>Don't pass in malformed or otherwise intentionally incorrect data (If anything it will probably just mess up your own account)</li>
-                    <li>Don't try to hack our server or steal other people's data (If you think you've found a vulnerability, TODO ADD SECURITY GUIDELINES ON GITHUB)</li>
-                    <li>Don't do anything illegal</li>
-                </ul>
-                <img src="https://i.kym-cdn.com/entries/icons/original/000/036/123/It's_The_Law_Meme_Banner.jpg" width="300px"/>
             </p>
+            <ul>
+                <li>Don't spam requests to the server (This will just trigger the data cap and ruin it for everyone)</li>
+                <li>Don't pass in malformed or otherwise intentionally incorrect data (If anything it will probably just mess up your own account)</li>
+                <li>Don't try to hack our server or steal other people's data (If you think you've found a vulnerability, TODO ADD SECURITY GUIDELINES ON GITHUB)</li>
+                <li>Don't do anything illegal</li>
+            </ul>
+            <a href="https://tenor.com/view/law-smile-ocd-creep-scold-gif-8128981">IT'S THE LAW!!!</a>
             <h2>A note about Gradescope</h2>
             <p>
-                Gradescope does not provide a public API. As such, this service works by signing into Gradescope on your behalf and scraping the data.
+                Gradescope does not provide a public API. As such, this service works by logging into Gradescope on your behalf and scraping the data.
                 This is likely against Gradescope TOS (I'm not a lawyer and the TOS is not very clear on this).
                 You agree that use of this app is at your own risk, and grant this app permission to access your Gradescope account on your behalf.
             </p>
@@ -86,7 +81,7 @@
             <p>
                 We assert that we have made a good faith effort to make this app secure and reliable.
                 However, we cannot guarantee that it will always work. By using this app, you agree to
-                hold us harmless for any damages caused by this app. Including but not limited to damages caused by:
+                hold us harmless for any damages caused by this app. This includes but not limited to damages caused by:
                 <ul>
                     <li>Service interruptions</li>
                     <li>Data breaches</li>

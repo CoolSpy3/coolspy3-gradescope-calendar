@@ -120,7 +120,7 @@ async def get_async_data_from_gradescope(url: str, query: str, session: aiohttp.
 
     Args:
         url: The URL of the Gradescope page to download
-        query: The XPath query to use to parse the page
+        query: The XPath query to use to parse the page. If empty, an empty list will be returned
         session: The aiohttp session to use to download the page
 
     Returns:
@@ -133,7 +133,7 @@ async def get_async_data_from_gradescope(url: str, query: str, session: aiohttp.
         if response.status != 200:
             raise RuntimeError(f"Gradescope Error: {response.status}! {await response.read()}")
 
-        return ElementTree.fromstring(await response.read()).findall(query)
+        return ElementTree.fromstring(await response.read()).findall(query) if query else []
 
 
 def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> list[ElementTree.Element]:
@@ -142,7 +142,7 @@ def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> lis
 
     Args:
         url: The URL of the Gradescope page to download
-        query: The XPath query to use to parse the page
+        query: The XPath query to use to parse the page. If empty, an empty list will be returned
         gradescope_token: The user's Gradescope token
 
     Returns:
@@ -156,7 +156,7 @@ def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> lis
         if response.status_code != 200:
             raise RuntimeError(f"Gradescope Error: {response.status_code}! {response.content}")
 
-        return ElementTree.fromstring(response.content).findall(query)
+        return ElementTree.fromstring(response.content).findall(query) if query else []
 
 
 def login_to_gradescope(email: str, password: str) -> Tuple[str, str] | Tuple[None, None]:
@@ -201,6 +201,20 @@ def login_to_gradescope(email: str, password: str) -> Tuple[str, str] | Tuple[No
         # Extract the token cookie and expiration date from the response
         token_cookie = response.cookies.get("signed_token", None)
         return (token_cookie.value, token_cookie.expires.isoformat()) if token_cookie else (None, None)
+
+
+def logout_of_gradescope(token: str) -> None:
+    """
+    Logs a user out of Gradescope by attempting to invalidate their token
+    This function does not remove the user's credentials from the database
+
+    Args:
+        token: The user's Gradescope token
+
+    Returns:
+        None
+    """
+    get_data_from_gradescope("/logout?tfs_mode=false", "", token)
 
 
 # endregion

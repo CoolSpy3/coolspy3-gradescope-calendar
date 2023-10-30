@@ -2,7 +2,7 @@ import asyncio
 from typing import Any
 
 from firebase_admin import db, initialize_app
-from firebase_functions import https_fn, scheduler_fn
+from firebase_functions import db_fn, https_fn, scheduler_fn
 from firebase_functions.https_fn import FunctionsErrorCode
 from firebase_functions.params import SecretParam
 from googleapiclient.discovery import build as build_google_api_service
@@ -109,6 +109,17 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunc
 
     return utils.fn_response({"success": True})
 
+
+@db_fn.on_value_written("credentials/{uid}/gradescope/token")
+def invalidate_gradescope_token(event: db_fn.Event[Any]) -> None:
+    """
+    This function is called by the database when the user's Gradescope token is updated.
+    """
+    old_token = event.data["old"]
+    if not old_token or not isinstance(old_token, str):
+        return
+    # Invalidate the user's token
+    utils.logout_of_gradescope(old_token)
 
 @https_fn.on_call()
 def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
