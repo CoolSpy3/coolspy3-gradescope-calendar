@@ -329,7 +329,8 @@ async def update_calendar_from_cache(uid: str, calendar_service: Any, user_setti
         # If the assignment has an event associated with it
         if assignment["event_id"]:
             # And something about the assignment has changed
-            if (completed_assignment_color and assignment["completed"]) or assignment["due_date_changed"]:
+            if (completed_assignment_color and assignment["completed"]) or assignment["outdated"]:
+                assignment["outdated"] = False  # Mark the assignment as up-to-date
                 # Update the event
                 utils.patch_assignment_event(calendar_service, event_update_batch, user_settings["calendar_id"],
                                              user_settings["courses"].get(assignment["course_id"], {}), assignment,

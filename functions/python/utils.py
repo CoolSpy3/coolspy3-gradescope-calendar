@@ -312,6 +312,7 @@ def patch_assignment_event(calendar_service: Any, event_update_batch: Any, calen
 
     # Create the event object
     event = {
+        "summary": f'{assignment["name"]} [{assignment["course_id"]}]',
         "start": {
             "dateTime": assignment["due_date"]
         },
@@ -510,8 +511,8 @@ def parse_assignment(assignment: ElementTree.Element, course_id: str) -> Assignm
             "due_date": due_date_from_progress_div(assignment[2][0][2]),
             "completed": assignment[1][1].text == "Submitted",
             "course_id": course_id,
-            # The due date has not changed if the assignment has not yet been added to the cache
-            "due_date_changed": False
+            # The event is not outdated if the assignment has not yet been added to the cache
+            "outdated": False
         }
     except Exception as e:
         print(e)
@@ -523,14 +524,14 @@ def update_gradescope_assignment(assignment: Assignment, old_assignment: Assignm
     Updates an assignment in the user's assignment cache with new information from Gradescope
     """
     if not old_assignment:
-        # If the assignment is new, it has no event ID and the due date has not changed
+        # If the assignment is new, it has no event ID and is not associated with an outdated event
         assignment["event_id"] = ""
-        assignment["due_date_changed"] = False
+        assignment["outdated"] = False
     else:
-        # Otherwise, the assignment has the same event ID and the due date has changed if the due date is different
+        # Otherwise, the assignment has the same event ID and the event is outdated if something has changed
         assignment["event_id"] = old_assignment["event_id"]
-        assignment["due_date_changed"] = (old_assignment["due_date_changed"]
-                                          or assignment["due_date"] != old_assignment["due_date"])
+        assignment["outdated"] = (old_assignment["outdated"] or assignment["due_date"] != old_assignment["due_date"]
+                                  or assignment["name"] != old_assignment["name"])
     return assignment
 
 

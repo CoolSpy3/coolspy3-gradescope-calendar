@@ -7,10 +7,10 @@
                     "normal": "string",
                     "late": "string"
                 },
-                "due_date_changed": "boolean",
                 "completed": "boolean",
                 "course_id": "string",
-                "event_id": "string"
+                "event_id": "string",
+                "outdated": "boolean"
             }
         }
     },
