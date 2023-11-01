@@ -22,7 +22,6 @@ if debug:
     OAUTH2_secrets = None
 
 else:
-
     # Environment variable initialization
     OAUTH2_CLIENT_ID = SecretParam("GOOGLE_CLIENT_ID")
     OAUTH2_CLIENT_SECRET = SecretParam("GOOGLE_CLIENT_SECRET")
