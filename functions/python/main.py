@@ -10,20 +10,18 @@ from google_auth_oauthlib.flow import Flow
 
 import utils
 
+# Firebase Admin SDK initialization
+app = initialize_app()
+
 debug = False
 if debug:
     debug_config = {
         "google_api_token": None
     }
 
-    # Firebase Admin SDK initialization
-    app = initialize_app(options={"databaseURL": "http://127.0.0.1:9000/?ns=coolspy3-gradescope-calendar-default-rtdb"})
-
     OAUTH2_secrets = None
 
 else:
-    # Firebase Admin SDK initialization
-    app = initialize_app()
 
     # Environment variable initialization
     OAUTH2_CLIENT_ID = SecretParam("GOOGLE_CLIENT_ID")
