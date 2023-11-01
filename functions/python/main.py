@@ -121,6 +121,7 @@ def invalidate_gradescope_token(event: db_fn.Event[Any]) -> None:
     # Invalidate the user's token
     utils.logout_of_gradescope(old_token)
 
+
 @https_fn.on_call()
 def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """
