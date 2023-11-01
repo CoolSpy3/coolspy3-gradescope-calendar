@@ -639,9 +639,12 @@ def wrap_async_exceptions(func: Callable) -> Callable:
         try:
             return await func(*args, **kwargs)
         except Exception as e:
-            print(e)
-            from google.cloud import error_reporting
-            error_reporting.Client().report_exception()
+            try:
+                print(e)
+                from google.cloud import error_reporting
+                error_reporting.Client().report_exception()
+            except Exception as e2:
+                print(e2)
 
     return wrapper
 
