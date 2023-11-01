@@ -110,12 +110,12 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunc
     return utils.fn_response({"success": True})
 
 
-@db_fn.on_value_written("credentials/{uid}/gradescope/token")
+@db_fn.on_value_written(reference="credentials/{uid}/gradescope/token")
 def invalidate_gradescope_token(event: db_fn.Event[Any]) -> None:
     """
     This function is called by the database when the user's Gradescope token is updated.
     """
-    old_token = event.data["old"]
+    old_token = event.data.before
     if not old_token or not isinstance(old_token, str):
         return
     # Invalidate the user's token
@@ -172,7 +172,7 @@ def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunction
     return utils.fn_response({"success": True})
 
 
-@https_fn.on_call()
+@https_fn.on_call(secrets=[OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET])
 @utils.sync
 async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """

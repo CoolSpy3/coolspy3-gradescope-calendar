@@ -120,7 +120,7 @@ async def get_async_data_from_gradescope(url: str, query: str, session: aiohttp.
 
     Args:
         url: The URL of the Gradescope page to download
-        query: The XPath query to use to parse the page. If empty, an empty list will be returned
+        query: The XPath query to use to parse the page
         session: The aiohttp session to use to download the page
 
     Returns:
@@ -133,7 +133,7 @@ async def get_async_data_from_gradescope(url: str, query: str, session: aiohttp.
         if response.status != 200:
             raise RuntimeError(f"Gradescope Error: {response.status}! {await response.read()}")
 
-        return ElementTree.fromstring(await response.read()).findall(query) if query else []
+        return ElementTree.fromstring(await response.read()).findall(query)
 
 
 def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> list[ElementTree.Element]:
@@ -142,7 +142,7 @@ def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> lis
 
     Args:
         url: The URL of the Gradescope page to download
-        query: The XPath query to use to parse the page. If empty, an empty list will be returned
+        query: The XPath query to use to parse the page
         gradescope_token: The user's Gradescope token
 
     Returns:
@@ -156,7 +156,7 @@ def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> lis
         if response.status_code != 200:
             raise RuntimeError(f"Gradescope Error: {response.status_code}! {response.content}")
 
-        return ElementTree.fromstring(response.content).findall(query) if query else []
+        return ElementTree.fromstring(response.content).findall(query)
 
 
 def login_to_gradescope(email: str, password: str) -> Tuple[str, str] | Tuple[None, None]:
@@ -214,7 +214,10 @@ def logout_of_gradescope(token: str) -> None:
     Returns:
         None
     """
-    get_data_from_gradescope("/logout?tfs_mode=false", "", token)
+    gradescope_cookies = {"signed_token": token}
+    with requests.get(format_gradescope_url("/logout?tfs_mode=false"), cookies=gradescope_cookies,
+                      allow_redirects=False) as _response:
+        pass  # Ignore the response
 
 
 # endregion
@@ -608,6 +611,7 @@ def sync(func: Callable) -> Callable:
     """
     Runs an async function synchronously
     """
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         return asyncio.run(func(*args, **kwargs))
@@ -634,6 +638,7 @@ def wrap_async_exceptions(func: Callable) -> Callable:
     """
     Wraps an async function so that any exceptions are silenced and reported to Google Cloud Error Reporting
     """
+
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         try:
