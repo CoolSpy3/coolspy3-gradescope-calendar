@@ -10,19 +10,44 @@ from google_auth_oauthlib.flow import Flow
 
 import utils
 
-# Firebase Admin SDK initialization
-app = initialize_app(options={"databaseURL": "http://127.0.0.1:9000/?ns=coolspy3-gradescope-calendar-default-rtdb"})
+debug = False
+if debug:
+    debug_config = {
+        "google_api_token": None
+    }
 
-# Environment variable initialization
-OAUTH2_CLIENT_ID = SecretParam("GOOGLE_CLIENT_ID")
-OAUTH2_CLIENT_SECRET = SecretParam("GOOGLE_CLIENT_SECRET")
+    # Firebase Admin SDK initialization
+    app = initialize_app(options={"databaseURL": "http://127.0.0.1:9000/?ns=coolspy3-gradescope-calendar-default-rtdb"})
+
+    OAUTH2_secrets = None
+
+else:
+    # Firebase Admin SDK initialization
+    app = initialize_app()
+
+    # Environment variable initialization
+    OAUTH2_CLIENT_ID = SecretParam("GOOGLE_CLIENT_ID")
+    OAUTH2_CLIENT_SECRET = SecretParam("GOOGLE_CLIENT_SECRET")
+    OAUTH2_secrets = [OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET]
 
 
-@https_fn.on_call(secrets=[OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET])
+def login_to_google(uid: str) -> Any:
+    """
+    Logs the user in to Google and returns the credentials or returns the debug token if debug mode is enabled.
+    """
+    if debug:
+        return debug_config["google_api_token"]
+    return utils.login_to_google(uid, OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET)
+
+
+@https_fn.on_call(secrets=OAUTH2_secrets)
 def oauth_callback(request: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """
     This function is called by the client to complete the Google OAuth flow.
     """
+
+    if debug:
+        raise RuntimeError("This function is not available in debug mode!")
 
     # Check that the user is authenticated, and the request is valid
     if not request.auth:
@@ -173,7 +198,7 @@ def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunction
     return utils.fn_response({"success": True})
 
 
-@https_fn.on_call(secrets=[OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET])
+@https_fn.on_call(secrets=OAUTH2_secrets)
 @utils.sync
 async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """
@@ -193,8 +218,7 @@ async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctio
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.PERMISSION_DENIED)
 
     # Connect to the Google Calendar API
-    with build_google_api_service('calendar', 'v3',
-                                  credentials=utils.login_to_google(uid, OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET)
+    with build_google_api_service('calendar', 'v3', credentials=login_to_google(uid)
                                   ) as calendar_service:
 
         # Validate the user's calendar ID
@@ -228,7 +252,7 @@ async def update_event_caches(_event: scheduler_fn.ScheduledEvent) -> None:
 
 
 # Run 4 times a day (every 6 hours) on the half hour
-@scheduler_fn.on_schedule(schedule="30 */6 * * *", secrets=[OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET])
+@scheduler_fn.on_schedule(schedule="30 */6 * * *", secrets=OAUTH2_secrets)
 @utils.sync
 async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
     """
@@ -268,8 +292,7 @@ async def update_calendar_for_user(uid) -> None:
         return
 
     # Connect to the Google Calendar API
-    with build_google_api_service('calendar', 'v3',
-                                  credentials=utils.login_to_google(uid, OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET)
+    with build_google_api_service('calendar', 'v3', credentials=login_to_google(uid)
                                   ) as calendar_service:
 
         # Validate the user's calendar ID

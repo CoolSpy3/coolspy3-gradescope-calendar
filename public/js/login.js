@@ -1,4 +1,8 @@
+authUIRendered = false;
+
 firebase.auth().onAuthStateChanged(user => {
+    if(authUIRendered) return; // onAuthStateChanged will be called again when the user signs in, so set a flag to prevent the code from running twice
+    authUIRendered = true;
     if (user) {
         window.location.href = "/dashboard";
     } else {
@@ -7,6 +11,11 @@ firebase.auth().onAuthStateChanged(user => {
         const authUIConfig = {
             callbacks: {
                 signInSuccessWithAuthResult: (authResult, redirectUrl) => {
+                    if(!authResult) {
+                        // We're running in a testing environment. This account is not real. Redirect to the dashboard and skip backend google auth.
+                        window.location.href = "/dashboard";
+                        return false;
+                    }
                     gapi.load('client', () => gapi.client.setToken({access_token: authResult.credentials.accessToken}));
                     firebase.database().ref("auth_status/" + authResult.user.uid).get().then(snapshot => snapshot.val()).then(authStatus => {
                         if (!authStatus) {
@@ -37,14 +46,14 @@ firebase.auth().onAuthStateChanged(user => {
                             });
                         }
                     });
-                    return true;
+                    // Handle the redirect manually
+                    return false;
                 },
                 uiShown: () => {
                     document.getElementById('loader').style.display = 'none';
                 }
             },
             signInFlow: 'popup',
-            signInSuccessUrl: '/dashboard',
             signInOptions: [
                 {
                     provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
