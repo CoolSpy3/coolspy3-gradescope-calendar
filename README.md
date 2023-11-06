@@ -1,7 +1,7 @@
 # coolspy3-gradescope-calendar
 This project is the web continuation of [CoolSpy3/gradescope-calendar](https://gihtub.com/CoolSpy3/gradescope-calendar). It is a web app that allows you to import your Gradescope calendar into your Google Calendar.
 
-UPDATE!!!: I an ready to officially call this project ready to deploy! (YAY!) It's probably going to be a few more days until I can sort out billing/deploying/final tests, but it's almost there!
+The site is currently hosted at [https://coolspy3-gradescope-calendar.web.app/](https://coolspy3-gradescope-calendar.web.app/).
 
 For information on how to use the site and how the implementation works on a high level, please read [this project's wiki](https://github.com/CoolSpy3/coolspy3-gradescope-calendar/wiki/)
 
