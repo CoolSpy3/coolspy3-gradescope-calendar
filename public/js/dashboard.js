@@ -1,5 +1,3 @@
-firebase.functions().useEmulator("127.0.0.1", 5001);
-
 function dashboardErrorHandler(data, msg) {
     alert(msg + " Please contact the developer if this problem continues. Helpful debug information has been dumped to the console.");
     console.error(msg + "\n" )
@@ -26,7 +24,16 @@ firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         this.user = user;
         gapi.load('client', () => {
-            gapi.client.setToken({access_token: user.credentials.accessToken});
+            if(!localStorage.getItem("google_access_token") || !localStorage.getItem("google_access_token_timestamp") || // User is not signed in.
+                Date.now() - parseInt(localStorage.getItem("google_access_token_timestamp")) >= 3600000) { // Access token is expired.
+                // Redirect to login page.
+                localStorage.removeItem("google_access_token");
+                localStorage.removeItem("google_access_token_timestamp");
+                firebase.auth().signOut();
+                window.location.href = "/login";
+                return;
+            }
+            gapi.client.setToken({access_token: localStorage.getItem("google_access_token")});
             gapi.client.load('calendar', 'v3', () => {
                 function recursivelyFindCalendars(pageToken = "") {
                     return new Promise((resolve, reject) => {

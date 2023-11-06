@@ -1,5 +1,3 @@
-firebase.functions().useEmulator("127.0.0.1", 5001);
-
 function gradescopeLinkerErrorHandler(data, msg) {
     alert(msg + " Please contact the developer if this problem continues. Helpful debug information has been dumped to the console.");
     console.error(msg + "\n" )
@@ -77,13 +75,6 @@ function validateGradescopeCredentials() {
         firebase.functions().httpsCallable("update_gradescope_token")({email: email, password: password, storeCredentials: storeCredentials}).then((result) => {
             if (result.data.success) {
                 alert("Successfully Linked to Gradescope!");
-                if(!storeCredentials && "expiration" in result.data) {
-                    if(confirm("Note: Gradescope tokens tend to expire after ~6 months. Would you like to add an event you your Calendar to remind you to re-link your account?")) {
-                        const expiration = result.data.expiration;
-                        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&dates=${expiration}%2F${expiration}&details=Gradescope%20Calendar&text=Re-link%20Gradescope%20Account`
-                        window.open(url, '_blank').focus();
-                    }
-                }
                 window.location.href = "/dashboard";
             } else {
                 alert("A backend error occurred linking your Gradescope account!");

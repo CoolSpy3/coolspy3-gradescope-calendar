@@ -62,7 +62,7 @@ def oauth_callback(request: https_fn.CallableRequest) -> utils.CallableFunctionR
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token"
         }
-    }, scopes=utils.GOOGLE_API_SCOPES)
+    }, scopes=utils.GOOGLE_API_SCOPES, redirect_uri="postmessage")
     try:
         flow.fetch_token(code=request.data["code"])
     except Exception as e:
@@ -109,7 +109,7 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunc
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.INVALID_ARGUMENT)
 
     # Try to log in to Gradescope with the given email and password
-    token, expiration = utils.login_to_gradescope(req.data["email"], req.data["password"])
+    token = utils.login_to_gradescope(req.data["email"], req.data["password"])
     if not token:
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.INVALID_ARGUMENT)
 
@@ -124,10 +124,6 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunc
 
     db.reference(f'credentials/{uid}/gradescope').set(gradescope_credentials)
     db.reference(f'auth_status/{uid}/gradescope').set(True)
-
-    # If the user doesn't want to store their credentials, tell them the expiration date (if we know it)
-    if not store_credentials and expiration:
-        return utils.fn_response({"success": True, "expiration": expiration})
 
     return utils.fn_response({"success": True})
 

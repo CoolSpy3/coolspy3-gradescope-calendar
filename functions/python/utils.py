@@ -5,7 +5,7 @@ import re
 import xml.etree.ElementTree as ElementTree
 from lxml.etree import XMLParser
 from datetime import datetime
-from typing import Any, TypeVar, Callable, cast, Type, Tuple
+from typing import Any, TypeVar, Callable, cast, Type, Optional
 
 import aiohttp
 import requests
@@ -159,7 +159,7 @@ def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> lis
         return ElementTree.fromstring(response.content).findall(query)
 
 
-def login_to_gradescope(email: str, password: str) -> Tuple[str, str] | Tuple[None, None]:
+def login_to_gradescope(email: str, password: str) -> Optional[str]:
     """
     Attempts to log in to Gradescope with the given credentials and returns the token and expiration date if successful
 
@@ -168,19 +168,19 @@ def login_to_gradescope(email: str, password: str) -> Tuple[str, str] | Tuple[No
         password: The user's Gradescope password
 
     Returns:
-        The user's token and expiration date, or (None, None) if the login failed
+        The user's token or None if the login failed
     """
     # We first have to make a GET request to the login page to get an authenticity token
     # We use a session because Gradescope checks the authenticity token against a cookie to prevent CSRF attacks
     session = requests.Session()
     with session.get("https://www.gradescope.com/login") as response:
         if response.status_code != 200:
-            return None, None
+            return None
         # Extract the authenticity token from the login page
         authenticity_token_el = ElementTree.fromstring(response.content, parser=XMLParser(recover=True)).find(
             ".//input[@name='authenticity_token']")
         if authenticity_token_el is None:
-            return None, None
+            return None
         authenticity_token = authenticity_token_el.get("value")
 
     # Build the form response data for the login request
@@ -194,13 +194,12 @@ def login_to_gradescope(email: str, password: str) -> Tuple[str, str] | Tuple[No
         "session[remember_me_sso]": "0",
     }
     # Try to log in to Gradescope
-    with session.post("https://www.gradescope.com/login", data=form_data, allow_redirects=False) as response:
+    with (session.post("https://www.gradescope.com/login", data=form_data, allow_redirects=False) as response):
         # If we're successfully logged in, we should be redirected to the account page
         if response.status_code != 302 or response.headers.get("location", '') != "https://www.gradescope.com/account":
-            return None, None  # Invalid credentials
-        # Extract the token cookie and expiration date from the response
-        token_cookie = response.cookies.get("signed_token", None)
-        return (token_cookie.value, token_cookie.expires.isoformat()) if token_cookie else (None, None)
+            return None  # Invalid credentials
+        # Extract the token cookie from the response
+        return response.cookies.get("signed_token", None)
 
 
 def logout_of_gradescope(token: str) -> None:
