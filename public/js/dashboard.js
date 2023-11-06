@@ -18,9 +18,12 @@ function downloadObjectAsJson(exportObj, exportName){
     downloadAnchorNode.remove();
 }
 
+uiRendered = false;
 user = null;
 
 firebase.auth().onAuthStateChanged((user) => {
+    if(uiRendered) return; // onAuthStateChanged will be called again when the user signs in, so set a flag to prevent the code from running twice
+    uiRendered = true;
     if (user) {
         this.user = user;
         gapi.load('client', () => {
@@ -229,7 +232,6 @@ function saveSettings() {
         completed_assignment_color: document.getElementById("completed-assignment-color-selector").value
     }
 
-    let courses = {};
     for (const courseSelector of document.getElementById("course-color-selectors").children) {
         if(courseSelector.children.length < 2 || courseSelector.children[1].id === "completed-assignment-color-selector") {
             continue;
