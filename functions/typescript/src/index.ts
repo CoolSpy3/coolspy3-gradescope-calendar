@@ -5,7 +5,6 @@ import {auth} from "firebase-functions/v1";
 initializeApp();
 
 export const onUserDelete = auth.user().onDelete((user) => {
-    console.log(`Deleting user ${user.uid}`);
     return getDatabase().ref("/").update({
         [`assignments/${user.uid}`]: null,
         [`auth_status/${user.uid}`]: null,
