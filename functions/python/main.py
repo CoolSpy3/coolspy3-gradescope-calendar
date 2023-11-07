@@ -234,8 +234,9 @@ async def update_event_caches(_event: scheduler_fn.ScheduledEvent) -> None:
     """
     This function is called by the periodically to update the assignment cache for all users.
     """
-    # Get all users
-    users = utils.get_db_ref_as_type("users", dict, shallow=True)
+    # Get all users (Iterate over the "credentials" key because "assignments" and "auth_status" might be blank and
+    #                "settings is public facing)
+    users = utils.get_db_ref_as_type("credentials", dict, shallow=True)
     if not users:
         return
 
@@ -251,8 +252,9 @@ async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
     """
     This function is called by the periodically to push updates from the assignment cache to users' calendars.
     """
-    # Get all users
-    users = utils.get_db_ref_as_type("users", dict, shallow=True)
+    # Get all users (Iterate over the "credentials" key because "assignments" and "auth_status" might be blank and
+    #                "settings is public facing)
+    users = utils.get_db_ref_as_type("credentials", dict, shallow=True)
     if not users:
         return
 
@@ -341,6 +343,7 @@ async def update_calendar_from_cache(uid: str, calendar_service: Any, user_setti
         This can be used as a callback for the Google Calendar API. When the request to create an event completes,
         it's response will contain the event ID, which we can use to update the assignment cache.
         """
+
         def update_cache_helper(_request_id, response, _exception):
             # updated_assignment is a reference to the assignment in the cache, so we can modify it directly
             updated_assignment["event_id"] = response["id"]
