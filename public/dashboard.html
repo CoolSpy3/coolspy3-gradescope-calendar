@@ -6,7 +6,7 @@
         <meta name="author" content="CoolSpy3">
         <meta name="description" content="Show Gradescope Assignments in Google Calendar">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="/css/main.css">
+        <link rel="stylesheet" href="css/main.css">
         <script defer src="/__/firebase/10.4.0/firebase-app-compat.js"></script>
         <script defer src="/__/firebase/10.3.1/firebase-auth-compat.js"></script>
         <script defer src="/__/firebase/10.3.1/firebase-database-compat.js"></script>
@@ -23,35 +23,41 @@
             <a href="/"><h1>Gradescope Calendar</h1></a>
             <a id="login-button" href="#">Signup / Login</a>
         </header>
-        <fieldset id="content">
-            <div class="button-container">
-                <button type="button" id="link-gradescope-button" class="blue-button" onclick="window.location.href = '/link-gradescope'">Link Gradescope Account</button>
-                <button type="button" id="link-google-button" class="blue-button" onclick="linkGoogleAccount()" disabled>Link Google Account</button>
-                <button type="button" id="refresh-course-list-button" class="blue-button" onclick="refreshCourseList()">Refresh Course List</button>
-                <button type="button" id="update-events-button" class="blue-button" onclick="refreshEvents()">Update Calendar Events</button>
-            </div>
+        <div id="content">
             <fieldset>
-                <legend>Calendar</legend>
-                <label for="calendar-selector">Select Calendar:</label>
-                <select id="calendar-selector">
-                    <option value="">None</option>
-                </select>
-            </fieldset>
-            <fieldset id="course-color-selectors">
-                <legend>Colors</legend>
-                <div class="course-color-selector">
-                    <label for="completed-assignment-color-selector">Completed Assignment Color:</label>
-                    <select id="completed-assignment-color-selector">
-                        <option value="" style="background-color: #fff">None</option>
+                <div class="button-container">
+                    <button type="button" id="link-gradescope-button" class="blue-button" onclick="window.location.href = '/link-gradescope'">Link Gradescope Account</button>
+                    <button type="button" id="link-google-button" class="blue-button" onclick="linkGoogleAccount()" disabled>Link Google Account</button>
+                    <button type="button" id="refresh-course-list-button" class="blue-button" onclick="refreshCourseList()">Refresh Course List</button>
+                    <button type="button" id="update-events-button" class="blue-button" onclick="refreshEvents()">Update Calendar Events</button>
+                </div>
+                <fieldset>
+                    <legend>Calendar</legend>
+                    <label for="calendar-selector">Select Calendar:</label>
+                    <select id="calendar-selector">
+                        <option value="">None</option>
                     </select>
+                </fieldset>
+                <fieldset id="course-color-selectors">
+                    <legend>Colors</legend>
+                    <div class="course-color-selector">
+                        <label for="completed-assignment-color-selector">Completed Assignment Color:</label>
+                        <select id="completed-assignment-color-selector">
+                            <option value="" style="background-color: #fff">None</option>
+                        </select>
+                    </div>
+                </fieldset>
+                <button type="button" id="save-settings-button" class="blue-button" onclick="saveSettings()">Save Changes</button>
+                <div class="button-container">
+                    <button type="button" id="download-data-button" class="white-button" onclick="downloadData()">Download My Data</button>
+                    <button type="button" id="delete-account-button" class="red-button" onclick="deleteAccount()">Delete My Account</button>
                 </div>
             </fieldset>
-            <button type="button" id="save-settings-button" class="blue-button" onclick="saveSettings()">Save Changes</button>
-            <div class="button-container">
-                <button type="button" id="download-data-button" class="white-button" onclick="downloadData()">Download My Data</button>
-                <button type="button" id="delete-account-button" class="red-button" onclick="deleteAccount()">Delete My Account</button>
-            </div>
-        </fieldset>
+            <p>
+                Need some help setting up your account?
+                <a href="https://github.com/CoolSpy3/coolspy3-gradescope-calendar/wiki/" class="white-button">Check out our documentation</a>
+            </p>
+        </div>
         <footer>
             <a href="https://github.com/CoolSpy3/coolspy3-gradescope-calendar/wiki/">Documentation</a>
             <a href="/disclaimer">Disclaimer</a>
