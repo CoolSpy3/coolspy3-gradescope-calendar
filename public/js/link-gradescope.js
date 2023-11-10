@@ -7,7 +7,7 @@ function gradescopeLinkerErrorHandler(data, msg) {
     console.log("END HELPFUL DEBUG INFORMATION");
 }
 
-uiRendered = false;
+let uiRendered = false;
 
 firebase.auth().onAuthStateChanged((user) => {
     if(uiRendered) return; // onAuthStateChanged will be called again when the user signs in, so set a flag to prevent the code from running twice
