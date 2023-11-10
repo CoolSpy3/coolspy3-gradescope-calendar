@@ -8,6 +8,7 @@ firebase.auth().onAuthStateChanged(user => {
         header.appendChild(dashboardLink);
 
         const loginButton = document.createElement('login-button');
+        loginButton.id = "login-button";
         loginButton.innerHTML = 'Logout (' + user.displayName + ')';
         loginButton.href = "/";
         loginButton.onclick = firebase.auth().signOut;
