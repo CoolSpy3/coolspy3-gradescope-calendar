@@ -14,7 +14,8 @@ firebase.auth().onAuthStateChanged((user) => {
                 linkGoogleButton.disabled = false;
             }
         }).catch(error => {
-            dashboardErrorHandler(error, "An error occurred fetching your Gradescope authentication status.");
+            console.log(error);
+            alert("An error occurred checking your Google account status! Try refreshing the page.");
         });
     } else {
         window.location.href = "/401";

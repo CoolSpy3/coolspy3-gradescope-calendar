@@ -13,6 +13,8 @@
         <script defer src="/__/firebase/10.3.1/firebase-functions-compat.js"></script>
         <script defer src="/__/firebase/init.js?useEmulator=true"></script>
         <script defer src="/js/main.js"></script>
+        <!-- Script for Google Account Linking -->
+        <script defer src="https://accounts.google.com/gsi/client"></script>
         <script defer src="/js/link-google.js"></script>
     </head>
     <body>
@@ -25,7 +27,7 @@
                 Before you can continue to the service, we need to link your Google account to our backend.
                 Please click the button below to authorize us to add events to your calendar.
             </p>
-            <button class="gsi-material-button" onclick="linkGoogleAccount()" disabled style="margin: 0 auto;">
+            <button id="link-google-button" class="gsi-material-button" onclick="linkGoogleAccount()" disabled>
                 <div class="gsi-material-button-state"></div>
                 <div class="gsi-material-button-content-wrapper">
                     <div class="gsi-material-button-icon">
