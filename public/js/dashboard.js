@@ -21,11 +21,11 @@ function downloadObjectAsJson(exportObj, exportName){
 let uiRendered = false;
 let user = null;
 
-firebase.auth().onAuthStateChanged((user) => {
+firebase.auth().onAuthStateChanged((loggedInUser) => {
     if(uiRendered) return; // onAuthStateChanged will be called again when the user signs in, so set a flag to prevent the code from running twice
     uiRendered = true;
-    if (user) {
-        this.user = user;
+    if (loggedInUser) {
+        user = loggedInUser;
         gapi.load('client', () => {
             if(!localStorage.getItem("google_access_token") || !localStorage.getItem("google_access_token_timestamp") || // User is not signed in.
                 Date.now() - parseInt(localStorage.getItem("google_access_token_timestamp")) >= 3600000) { // Access token is expired.
