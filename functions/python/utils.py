@@ -2,8 +2,7 @@ import asyncio
 import functools
 import json
 import re
-import xml.etree.ElementTree as ElementTree
-from lxml.etree import XMLParser
+from lxml import etree as ElementTree
 from datetime import datetime
 from typing import Any, TypeVar, Callable, cast, Type, Optional
 
@@ -133,7 +132,7 @@ async def get_async_data_from_gradescope(url: str, query: str, session: aiohttp.
         if response.status != 200:
             raise RuntimeError(f"Gradescope Error: {response.status}! {await response.read()}")
 
-        return ElementTree.fromstring(await response.read()).findall(query)
+        return ElementTree.HTML(await response.read(), None).findall(query)
 
 
 def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> list[ElementTree.Element]:
@@ -156,7 +155,7 @@ def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> lis
         if response.status_code != 200:
             raise RuntimeError(f"Gradescope Error: {response.status_code}! {response.content}")
 
-        return ElementTree.fromstring(response.content).findall(query)
+        return ElementTree.HTML(response.content).findall(query)
 
 
 def login_to_gradescope(email: str, password: str) -> Optional[str]:
@@ -177,7 +176,7 @@ def login_to_gradescope(email: str, password: str) -> Optional[str]:
         if response.status_code != 200:
             return None
         # Extract the authenticity token from the login page
-        authenticity_token_el = ElementTree.fromstring(response.content, parser=XMLParser(recover=True)).find(
+        authenticity_token_el = ElementTree.HTML(response.content, parser=ElementTree.HTMLParser(recover=True)).find(
             ".//input[@name='authenticity_token']")
         if authenticity_token_el is None:
             return None
