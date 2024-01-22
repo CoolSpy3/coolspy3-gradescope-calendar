@@ -2,13 +2,14 @@ import asyncio
 import functools
 import json
 import re
-from lxml import etree as ElementTree
+from lxml import etree
 from datetime import datetime
 from typing import Any, TypeVar, Callable, cast, Type, Optional
 
 import aiohttp
 import requests
 from aiohttp import CookieJar
+from cryptography.fernet import Fernet
 from firebase_admin import db
 from firebase_functions.https_fn import FunctionsErrorCode, HttpsError
 from firebase_functions.params import SecretParam
@@ -65,13 +66,14 @@ def check_gradescope_token(token: Any) -> bool:
         return response.status_code == 200
 
 
-def get_gradescope_token(uid: str) -> str | None:
+def get_gradescope_token(uid: str, fernet: Fernet) -> str | None:
     """
     Gets the Gradescope token for a user from the database. If the token is invalid, this method will attempt to log in
     to Gradescope with the user's credentials (if available) and refresh the token.
 
     Args:
         uid: The user's UID
+        fernet: The Fernet object to use to decrypt the token
 
     Returns:
         The user's Gradescope token, or None if a token could not be obtained
@@ -79,7 +81,10 @@ def get_gradescope_token(uid: str) -> str | None:
     # Has the user linked their Gradescope account?
     if not db.reference(f'auth_status/{uid}/gradescope').get():
         return None
-    gradescope_token = db.reference(f'credentials/{uid}/gradescope/token').get()
+    gradescope_token = get_db_ref_as_type(f'credentials/{uid}/gradescope/token', str)
+
+    if gradescope_token:  # If we have a token, decrypt it
+        gradescope_token = fernet_decrypt(gradescope_token, fernet)
 
     # Is the saved token valid?
     if not check_gradescope_token(gradescope_token):
@@ -89,12 +94,18 @@ def get_gradescope_token(uid: str) -> str | None:
         gradescope_password = get_db_ref_as_type(f'credentials/{uid}/gradescope/password', str)
         if gradescope_email and gradescope_password:
             # If so, log in to Gradescope and get a new token
-            gradescope_token, _ = login_to_gradescope(gradescope_email, gradescope_password)
+            gradescope_token = login_to_gradescope(
+                fernet_decrypt(gradescope_email, fernet),
+                fernet_decrypt(gradescope_password, fernet)
+            )
 
         # If we still don't have a token, the user needs to relink their Gradescope account
         if not gradescope_token:
             db.reference(f'auth_status/{uid}/gradescope').set(False)
             return None
+
+        # Save the new token
+        db.reference(f'credentials/{uid}/gradescope/token').set(fernet_encrypt(gradescope_token, fernet))
 
     return gradescope_token
 
@@ -113,7 +124,7 @@ def format_gradescope_url(url: str) -> str:
 
 
 async def get_async_data_from_gradescope(url: str, query: str, session: aiohttp.ClientSession) \
-        -> list[ElementTree.Element]:
+        -> list[etree.Element]:
     """
     Downloads a Gradescope page asynchronously and parses it with XPath
 
@@ -132,10 +143,10 @@ async def get_async_data_from_gradescope(url: str, query: str, session: aiohttp.
         if response.status != 200:
             raise RuntimeError(f"Gradescope Error: {response.status}! {await response.read()}")
 
-        return ElementTree.HTML(await response.read(), None).findall(query)
+        return etree.HTML(await response.read(), None).findall(query)
 
 
-def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> list[ElementTree.Element]:
+def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> list[etree.Element]:
     """
     Downloads a Gradescope page and parses it with XPath
 
@@ -155,7 +166,7 @@ def get_data_from_gradescope(url: str, query: str, gradescope_token: str) -> lis
         if response.status_code != 200:
             raise RuntimeError(f"Gradescope Error: {response.status_code}! {response.content}")
 
-        return ElementTree.HTML(response.content).findall(query)
+        return etree.HTML(response.content).findall(query)
 
 
 def login_to_gradescope(email: str, password: str) -> Optional[str]:
@@ -176,7 +187,7 @@ def login_to_gradescope(email: str, password: str) -> Optional[str]:
         if response.status_code != 200:
             return None
         # Extract the authenticity token from the login page
-        authenticity_token_el = ElementTree.HTML(response.content, parser=ElementTree.HTMLParser(recover=True)).find(
+        authenticity_token_el = etree.HTML(response.content, parser=etree.HTMLParser(recover=True)).find(
             ".//input[@name='authenticity_token']")
         if authenticity_token_el is None:
             return None
@@ -222,7 +233,7 @@ def logout_of_gradescope(token: str) -> None:
 
 # region Google
 
-def login_to_google(uid: str, oauth2_client_id: SecretParam, oauth2_client_secret: SecretParam) -> Any:
+def login_to_google(uid: str, oauth2_client_id: SecretParam, oauth2_client_secret: SecretParam, fernet: Fernet) -> Any:
     """
     Attempts to redeem a user's Google refresh token for an access token and returns the credentials if successful
 
@@ -230,6 +241,7 @@ def login_to_google(uid: str, oauth2_client_id: SecretParam, oauth2_client_secre
         uid: The user's UID
         oauth2_client_id: This app's Google OAuth2 client ID
         oauth2_client_secret: This app's Google OAuth2 client secret
+        fernet: The Fernet object to use to decrypt the refresh token
 
     Returns:
         The user's Google credentials, or None if the login failed
@@ -242,6 +254,9 @@ def login_to_google(uid: str, oauth2_client_id: SecretParam, oauth2_client_secre
     if not (refresh_token := get_db_ref_as_type(f'credentials/{uid}/google/token', str)):
         db.reference(f'auth_status/{uid}/google').set(False)
         return None
+
+    # Decrypt the refresh token
+    refresh_token = fernet_decrypt(refresh_token, fernet)
 
     # Create a Credentials object from the refresh token
     credentials = Credentials(
@@ -261,7 +276,7 @@ def login_to_google(uid: str, oauth2_client_id: SecretParam, oauth2_client_secre
 
     # Save the new refresh token if it has changed
     if credentials.refresh_token != refresh_token:
-        db.reference(f'credentials/{uid}/google/token').set(credentials.refresh_token)
+        db.reference(f'credentials/{uid}/google/token').set(fernet_encrypt(credentials.refresh_token, fernet))
 
     return credentials
 
@@ -390,7 +405,7 @@ def fn_response(data: str | dict, code: FunctionsErrorCode = FunctionsErrorCode.
 # region Assignments
 
 
-def due_date_from_progress_div(progress_div: ElementTree.Element) -> str:
+def due_date_from_progress_div(progress_div: etree.Element) -> str:
     """
     Parses a Gradescope progress div and returns the due date
 
@@ -467,7 +482,7 @@ async def fetch_course_assignments(course_id: str, course: Course, session: aioh
     return assignments
 
 
-def get_assignment_id(assignment: ElementTree.Element) -> str:
+def get_assignment_id(assignment: etree.Element) -> str:
     """
     Gets the Gradescope assignment ID from an assignment element
 
@@ -493,7 +508,7 @@ def get_assignment_id(assignment: ElementTree.Element) -> str:
     return "Unknown"
 
 
-def get_assignment_name(assignment: ElementTree.Element) -> str:
+def get_assignment_name(assignment: etree.Element) -> str:
     """
     Gets the name of an assignment from an assignment element
 
@@ -509,7 +524,7 @@ def get_assignment_name(assignment: ElementTree.Element) -> str:
                                 lambda name: name.text, "<Unknown Assignment>").strip()
 
 
-def parse_assignment(assignment: ElementTree.Element, course_id: str) -> Assignment | None:
+def parse_assignment(assignment: etree.Element, course_id: str) -> Assignment | None:
     """
     Parses an assignment element and returns the assignment information in a dictionary
 
@@ -604,6 +619,34 @@ def get_user_settings(uid: str) -> UserSettings | None:
 # endregion
 
 # region Util
+
+def fernet_decrypt(data: str, fernet: Fernet) -> str:
+    """
+    Decrypts data with a Fernet object
+
+    Args:
+        data: The data to decrypt
+        fernet: The Fernet object to use to decrypt the data
+
+    Returns:
+        The decrypted data
+    """
+    return fernet.decrypt(data.encode()).decode()
+
+
+def fernet_encrypt(data: str, fernet: Fernet) -> str:
+    """
+    Encrypts data with a Fernet object
+
+    Args:
+        data: The data to encrypt
+        fernet: The Fernet object to use to encrypt the data
+
+    Returns:
+        The encrypted data
+    """
+    return fernet.encrypt(data.encode()).decode()
+
 
 def sync(func: Callable) -> Callable:
     """
