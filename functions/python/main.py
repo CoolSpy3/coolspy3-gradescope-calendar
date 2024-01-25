@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any
+from typing import Any, Optional
 
 from cryptography.fernet import Fernet
 from firebase_admin import db, initialize_app
@@ -20,23 +20,31 @@ if debug:
         "google_api_token": None
     }
 
-    OAUTH2_secrets = None
+    OAUTH2_CLIENT_ID = None
+    OAUTH2_CLIENT_SECRET = None
 
     # If we're in debug mode, generate a random encryption key
+    DATA_ENCRYPTION_SECRET = None
     DATA_ENCRYPTION_KEY = Fernet.generate_key()
-    fernet = Fernet(DATA_ENCRYPTION_KEY)
 
 else:
     # Environment variable initialization
     OAUTH2_CLIENT_ID = SecretParam("GOOGLE_CLIENT_ID")
     OAUTH2_CLIENT_SECRET = SecretParam("GOOGLE_CLIENT_SECRET")
-    OAUTH2_secrets = [OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET]
 
-    DATA_ENCRYPTION_KEY = SecretParam("DATA_ENCRYPTION_KEY")
-    fernet = Fernet(DATA_ENCRYPTION_KEY.value)
+    DATA_ENCRYPTION_SECRET = SecretParam("DATA_ENCRYPTION_KEY")
 
 
-def login_to_google(uid: str) -> Any:
+def get_fernet() -> Fernet:
+    """
+    Returns the encryption key as a Fernet object.
+    """
+    if debug:
+        return Fernet(DATA_ENCRYPTION_KEY)
+    return Fernet(DATA_ENCRYPTION_SECRET.value)
+
+
+def login_to_google(uid: str, fernet: Fernet) -> Any:
     """
     Logs the user in to Google and returns the credentials or returns the debug token if debug mode is enabled.
     """
@@ -45,7 +53,16 @@ def login_to_google(uid: str) -> Any:
     return utils.login_to_google(uid, OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET, fernet)
 
 
-@https_fn.on_call(secrets=OAUTH2_secrets)
+def secrets(*secret_objs: Optional[SecretParam]) -> Optional[list[SecretParam]]:
+    """
+    Concatenates a list of secrets or returns None if any of the secrets are None.
+    """
+    if any(secret is None for secret in secret_objs):
+        return None
+    return list(secret_objs)
+
+
+@https_fn.on_call(secrets=secrets(OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET, DATA_ENCRYPTION_SECRET))
 def oauth_callback(request: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """
     This function is called by the client to complete the Google OAuth flow.
@@ -78,13 +95,14 @@ def oauth_callback(request: https_fn.CallableRequest) -> utils.CallableFunctionR
         return utils.fn_response({"success": False}, FunctionsErrorCode.INVALID_ARGUMENT)
 
     # Store the refresh token in the database
-    db.reference(f'credentials/{uid}/google/token').set(utils.fernet_encrypt(flow.credentials.refresh_token, fernet))
+    db.reference(f'credentials/{uid}/google/token').set(
+        utils.fernet_encrypt(flow.credentials.refresh_token, get_fernet()))
     db.reference(f'auth_status/{uid}/google').set(True)
 
     return utils.fn_response({"success": True})
 
 
-@https_fn.on_call()
+@https_fn.on_call(secrets=secrets(DATA_ENCRYPTION_SECRET))
 def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """
     This function is called by the client to update the user's Gradescope token.
@@ -100,7 +118,7 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunc
         if utils.check_gradescope_token(req.data["token"]):  # If the token is valid
             # Store it in the database
             gradescope_credentials = {
-                "token": utils.fernet_encrypt(req.data["token"], fernet),
+                "token": utils.fernet_encrypt(req.data["token"], get_fernet()),
                 # While we're at it, delete the email and password from the database (if they exist)
                 "email": None,
                 "password": None
@@ -122,6 +140,7 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunc
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.INVALID_ARGUMENT)
 
     # If the login was successful, store the token in the database
+    fernet = get_fernet()
     store_credentials = req.data.get("store-credentials", False)
     gradescope_credentials = {
         "token": utils.fernet_encrypt(token, fernet),
@@ -136,7 +155,7 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunc
     return utils.fn_response({"success": True})
 
 
-@db_fn.on_value_written(reference="credentials/{uid}/gradescope/token")
+@db_fn.on_value_written(reference="credentials/{uid}/gradescope/token", secrets=secrets(DATA_ENCRYPTION_SECRET))
 def invalidate_gradescope_token(event: db_fn.Event[Any]) -> None:
     """
     This function is called by the database when the user's Gradescope token is updated.
@@ -145,10 +164,10 @@ def invalidate_gradescope_token(event: db_fn.Event[Any]) -> None:
     if not old_token or not isinstance(old_token, str):
         return
     # Invalidate the user's token
-    utils.logout_of_gradescope(utils.fernet_decrypt(old_token, fernet))
+    utils.logout_of_gradescope(utils.fernet_decrypt(old_token, get_fernet()))
 
 
-@https_fn.on_call()
+@https_fn.on_call(secrets=secrets(DATA_ENCRYPTION_SECRET))
 def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """
     This function is called by the client to update the user's course list.
@@ -160,7 +179,7 @@ def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunction
     uid = req.auth.uid
 
     # Check that the user has a valid Gradescope token
-    if not (gradescope_token := utils.get_gradescope_token(uid, fernet)):
+    if not (gradescope_token := utils.get_gradescope_token(uid, get_fernet())):
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.PERMISSION_DENIED)
 
     # Get the user's courses from Gradescope
@@ -199,7 +218,7 @@ def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunction
     return utils.fn_response({"success": True})
 
 
-@https_fn.on_call(secrets=OAUTH2_secrets)
+@https_fn.on_call(secrets=secrets(OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET, DATA_ENCRYPTION_SECRET))
 @utils.sync
 async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """
@@ -214,12 +233,14 @@ async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctio
     if not (user_settings := utils.get_user_settings(uid)):
         return utils.fn_response("invalid_user_settings", FunctionsErrorCode.FAILED_PRECONDITION)
 
+    fernet = get_fernet()
+
     # Validating the Gradescope token is more expensive, so we do it last
     if not (gradescope_token := utils.get_gradescope_token(uid, fernet)):
         return utils.fn_response("invalid_gradescope_auth", FunctionsErrorCode.PERMISSION_DENIED)
 
     # Connect to the Google Calendar API
-    with build_google_api_service('calendar', 'v3', credentials=login_to_google(uid)
+    with build_google_api_service('calendar', 'v3', credentials=login_to_google(uid, fernet)
                                   ) as calendar_service:
 
         # Validate the user's calendar ID
@@ -236,7 +257,7 @@ async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctio
 
 
 # Run 4 times a day (every 6 hours) on the hour
-@scheduler_fn.on_schedule(schedule="0 */6 * * *")
+@scheduler_fn.on_schedule(schedule="0 */6 * * *", secrets=secrets(DATA_ENCRYPTION_SECRET))
 @utils.sync
 async def update_event_caches(_event: scheduler_fn.ScheduledEvent) -> None:
     """
@@ -254,7 +275,8 @@ async def update_event_caches(_event: scheduler_fn.ScheduledEvent) -> None:
 
 
 # Run 4 times a day (every 6 hours) on the half hour
-@scheduler_fn.on_schedule(schedule="30 */6 * * *", secrets=OAUTH2_secrets)
+@scheduler_fn.on_schedule(schedule="30 */6 * * *",
+                          secrets=secrets(OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET, DATA_ENCRYPTION_SECRET))
 @utils.sync
 async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
     """
@@ -277,7 +299,7 @@ async def update_event_cache_for_user(uid) -> None:
     Updates the assignment cache for a single user and stores the updated cache in the database.
     """
     # Check that the user has valid settings and a valid Gradescope token
-    if ((gradescope_token := utils.get_gradescope_token(uid, fernet)) and
+    if ((gradescope_token := utils.get_gradescope_token(uid, get_fernet())) and
             (user_settings := utils.get_user_settings(uid))):
         # Update the user's assignment cache
         assignment_cache = await get_updated_assignment_cache(uid, user_settings, gradescope_token)
@@ -296,7 +318,7 @@ async def update_calendar_for_user(uid) -> None:
         return
 
     # Connect to the Google Calendar API
-    with build_google_api_service('calendar', 'v3', credentials=login_to_google(uid)
+    with build_google_api_service('calendar', 'v3', credentials=login_to_google(uid, get_fernet())
                                   ) as calendar_service:
 
         # Validate the user's calendar ID
