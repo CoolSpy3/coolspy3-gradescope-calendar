@@ -539,7 +539,7 @@ def parse_assignment(assignment: etree.Element, course_id: str) -> Assignment | 
         return {
             "name": get_assignment_name(assignment),
             "due_date": due_date_from_progress_div(assignment[2][0][2]),
-            "completed": assignment[1][1].text == "Submitted",
+            "completed": len(assignment[1]) != 2 or assignment[1][1].text == "Submitted",
             "course_id": course_id,
             # The event is not outdated if the assignment has not yet been added to the cache
             "outdated": False
