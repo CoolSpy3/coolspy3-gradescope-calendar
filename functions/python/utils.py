@@ -2,22 +2,26 @@ import asyncio
 import functools
 import json
 import re
+import requests
+
+import aiohttp
+from aiohttp import CookieJar
 from lxml import etree
 from datetime import datetime
 from typing import Any, TypeVar, Callable, cast, Type, Optional
 
-import aiohttp
-import requests
-from aiohttp import CookieJar
 from cryptography.fernet import Fernet
+
 from firebase_admin import db
 from firebase_functions.https_fn import FunctionsErrorCode, HttpsError
 from firebase_functions.params import SecretParam
-from google.auth.exceptions import RefreshError
-from google.auth.transport.requests import Request
-from googleapiclient.errors import HttpError
+from firebase_functions.options import SupportedRegion
 
+import google.auth
+from google.auth.exceptions import RefreshError
+from google.auth.transport.requests import AuthorizedSession, Request
 from google.oauth2.credentials import Credentials
+from googleapiclient.errors import HttpError
 
 # The format of the datetime strings returned by Gradescope
 GRADESCOPE_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S %z"
@@ -354,6 +358,26 @@ def patch_assignment_event(calendar_service: Any, event_update_batch: Any, calen
     # Add a request to patch the event to the batch
     event_update_batch.add(calendar_service.events().patch(calendarId=calendar_id, eventId=assignment["event_id"],
                                                            body=event))
+
+
+# Modified from:
+#   https://github.com/firebase/functions-samples/blob/071ac156f63dbc4fcef5adc492d912c51949978c/Python/taskqueues-backup-images/functions/main.py#L121-L140
+def get_function_url(name: str, location: str = SupportedRegion.US_CENTRAL1) -> str:
+    """Get the URL of a given v2 cloud function.
+
+    Params:
+        name: the function's name
+        location: the function's location
+
+    Returns: The URL of the function
+    """
+    credentials, project_id = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    authed_session = AuthorizedSession(credentials)
+    url = f'https://cloudfunctions.googleapis.com/v2/projects/{project_id}/locations/{location}/functions/{name}'
+    response = authed_session.get(url)
+    data = response.json()
+    function_url = data["serviceConfig"]["uri"]
+    return function_url
 
 
 # endregion

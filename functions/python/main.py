@@ -2,10 +2,14 @@ import asyncio
 from typing import Any, Optional
 
 from cryptography.fernet import Fernet
-from firebase_admin import db, initialize_app
-from firebase_functions import db_fn, https_fn, scheduler_fn
+
+from firebase_admin import db, initialize_app, functions
+from firebase_admin.functions import TaskOptions
+from firebase_functions import db_fn, https_fn, scheduler_fn, tasks_fn
 from firebase_functions.https_fn import FunctionsErrorCode
 from firebase_functions.params import SecretParam
+from firebase_functions.options import RetryConfig, RateLimits
+
 from googleapiclient.discovery import build as build_google_api_service
 from google_auth_oauthlib.flow import Flow
 
@@ -13,6 +17,10 @@ import utils
 
 # Firebase Admin SDK initialization
 app = initialize_app()
+
+# Settings
+# The number of users' calendars that can be updated in a single batch
+USER_AUTO_UPDATE_BATCH_SIZE = int(((10 * 60) / 3) / 2)  # 10 minutes before timeout / 3 seconds per user / half capacity
 
 debug = False
 if debug:
@@ -283,13 +291,38 @@ async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
     This function is called by the periodically to push updates from the assignment cache to users' calendars.
     """
     # Get all users (Iterate over the "credentials" key because "assignments" and "auth_status" might be blank and
-    #                "settings is public facing)
+    #                "settings" is public facing)
     users = utils.get_db_ref_as_type("credentials", dict, shallow=True)
     if not users:
         return
+    users = list(users.keys())
 
-    # Update the calendar for each user asynchronously
-    tasks = [update_calendar_for_user(uid) for uid in users.keys()]
+    # Break the userbase into manageable batches
+    user_batches = [users[i:i + USER_AUTO_UPDATE_BATCH_SIZE] for i in range(0, len(users), USER_AUTO_UPDATE_BATCH_SIZE)]
+
+    # Create a task for each batch
+    queue = functions.task_queue("update_calendar_batch")
+    function_url = utils.get_function_url("update_calendar_batch")
+
+    options = TaskOptions(schedule_delay_seconds=1,         # Schedule the task to run 1 second after the current time
+                          dispatch_deadline_seconds=10*60,  # Set a 10-minute deadline for the task
+                          uri=function_url)
+
+    for batch in user_batches:
+        queue.enqueue({"data": {"users": batch}}, options)
+
+
+@tasks_fn.on_task_dispatched(
+    retry_config=RetryConfig(max_attempts=0),  # Do not retry failed tasks (the overall task shouldn't fail)
+    rate_limits=RateLimits(max_concurrent_dispatches=10),  # Limit to 10 concurrent dispatches
+    secrets=secrets(OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET, DATA_ENCRYPTION_SECRET))
+# @utils.sync
+async def update_calendar_batch(request: tasks_fn.CallableRequest) -> None:
+    """
+    This function is called asynchronously by update_calendars to update the calendar for a group users.
+    """
+    # Update the calendar for each user in the request asynchronously
+    tasks = [update_calendar_for_user(uid) for uid in request.data["users"]]
     await asyncio.gather(*tasks)
 
 
