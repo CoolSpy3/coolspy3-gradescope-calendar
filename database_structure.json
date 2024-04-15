@@ -23,12 +23,12 @@
     "credentials": {
         "$uid": {
             "gradescope": {
-                "token": "string",
-                "email": "string",
-                "password": "string"
+                "token": "string (encrypted)",
+                "email": "string (encrypted)",
+                "password": "string (encrypted)"
             },
             "google": {
-                "token": "string"
+                "token": "string (encrypted)"
             }
         }
     },
