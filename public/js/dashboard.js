@@ -228,7 +228,6 @@ function refreshEvents() {
                 break;
             default:
                 dashboardErrorHandler(error, "An error occurred reloading your events.");
-                document.getElementById("update-events-button").disabled = false;
                 break;
         }
         document.getElementById("update-events-button").disabled = false;
@@ -281,6 +280,6 @@ function deleteAccount() {
         window.location.href = "/";
     })
     .catch((error) => {
-        dashboardErrorHandler(error, "An error occurred deleting your account. All of your data has been deleted from our servers, but your account has not been deleted from the site.");
+        dashboardErrorHandler(error, "An error occurred deleting your account.");
     });
 }
