@@ -175,6 +175,19 @@ def invalidate_gradescope_token(event: db_fn.Event[Any]) -> None:
     utils.logout_of_gradescope(utils.fernet_decrypt(old_token, get_fernet()))
 
 
+@db_fn.on_value_deleted(reference="credentials/{uid}/google/token", secrets=secrets(DATA_ENCRYPTION_SECRET))
+def invalidate_google_token(event: db_fn.Event[Any]) -> None:
+    """
+    This function is called by the database when the user's Google token is deleted.
+    """
+    old_token = event.data
+    if not old_token or not isinstance(old_token, str):
+        return
+
+    # Invalidate the user's token
+    utils.logout_of_google(utils.fernet_decrypt(old_token, get_fernet()))
+
+
 @https_fn.on_call(secrets=secrets(DATA_ENCRYPTION_SECRET))
 def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunctionResponse:
     """

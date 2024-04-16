@@ -285,6 +285,26 @@ def login_to_google(uid: str, oauth2_client_id: SecretParam, oauth2_client_secre
     return credentials
 
 
+def logout_of_google(token: str) -> None:
+    """
+    Logs a user out of Google by attempting to invalidate their token
+    This function does not remove the user's credentials from the database
+
+    Args:
+        token: The user's Google token
+
+    Returns:
+        None
+    """
+
+    if not token:
+        return
+
+    with requests.post("https://oauth2.googleapis.com/revoke", params={"token": token},
+                       headers={"content-type": "application/x-www-form-urlencoded"}) as _response:
+        pass  # Ignore the response
+
+
 def create_assignment_event(calendar_service: Any, event_create_batch: Any, calendar_id: str, course: Course,
                             assignment: Assignment, completed_color: str | None,
                             callback: Callable[[Any, Any, Any], Any]) -> None:
