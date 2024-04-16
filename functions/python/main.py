@@ -314,8 +314,8 @@ async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
     user_batches = [users[i:i + USER_AUTO_UPDATE_BATCH_SIZE] for i in range(0, len(users), USER_AUTO_UPDATE_BATCH_SIZE)]
 
     # Create a task for each batch
-    queue = functions.task_queue("update_calendar_batch")
-    function_url = utils.get_function_url("update_calendar_batch")
+    queue = functions.task_queue("updateCalendarBatch")
+    function_url = utils.get_function_url("updateCalendarBatch")
 
     options = TaskOptions(schedule_delay_seconds=1,         # Schedule the task to run 1 second after the current time
                           dispatch_deadline_seconds=10*60,  # Set a 10-minute deadline for the task
@@ -325,12 +325,14 @@ async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
         queue.enqueue({"data": {"users": batch}}, options)
 
 
+# noinspection PyPep8Naming
+# This function has to be camelCase because task names don't support underscores
 @tasks_fn.on_task_dispatched(
     retry_config=RetryConfig(max_attempts=0),  # Do not retry failed tasks (the overall task shouldn't fail)
     rate_limits=RateLimits(max_concurrent_dispatches=10),  # Limit to 10 concurrent dispatches
     secrets=secrets(OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET, DATA_ENCRYPTION_SECRET))
-# @utils.sync
-async def update_calendar_batch(request: tasks_fn.CallableRequest) -> None:
+@utils.sync
+async def updateCalendarBatch(request: tasks_fn.CallableRequest) -> None:
     """
     This function is called asynchronously by update_calendars to update the calendar for a group users.
     """
