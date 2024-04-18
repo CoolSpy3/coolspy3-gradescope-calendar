@@ -277,26 +277,8 @@ async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctio
     return utils.fn_response({"success": True})
 
 
-# Run 4 times a day (every 6 hours) on the hour
-@scheduler_fn.on_schedule(schedule="0 */6 * * *", secrets=secrets(DATA_ENCRYPTION_SECRET))
-@utils.sync
-async def update_event_caches(_event: scheduler_fn.ScheduledEvent) -> None:
-    """
-    This function is called by the periodically to update the assignment cache for all users.
-    """
-    # Get all users (Iterate over the "credentials" key because "assignments" and "auth_status" might be blank and
-    #                "settings is public facing)
-    users = utils.get_db_ref_as_type("credentials", dict, shallow=True)
-    if not users:
-        return
-
-    # Update the assignment cache for each user asynchronously
-    tasks = [update_event_cache_for_user(uid) for uid in users.keys()]
-    await asyncio.gather(*tasks)
-
-
 # Run 4 times a day (every 6 hours) on the half hour
-@scheduler_fn.on_schedule(schedule="30 */6 * * *",
+@scheduler_fn.on_schedule(schedule="0 */6 * * *",
                           secrets=secrets(OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET, DATA_ENCRYPTION_SECRET))
 @utils.sync
 async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
@@ -334,11 +316,19 @@ async def update_calendars(_event: scheduler_fn.ScheduledEvent) -> None:
 @utils.sync
 async def updateCalendarBatch(request: tasks_fn.CallableRequest) -> None:
     """
-    This function is called asynchronously by update_calendars to update the calendar for a group users.
+    This function is called asynchronously by update_calendars to update the cache and calendar for a group users.
     """
     # Update the calendar for each user in the request asynchronously
-    tasks = [update_calendar_for_user(uid) for uid in request.data["users"]]
+    tasks = [update_event_cache_and_calendar_for_user(uid) for uid in request.data["users"]]
     await asyncio.gather(*tasks)
+
+
+async def update_event_cache_and_calendar_for_user(uid) -> None:
+    """
+    Updates the assignment cache and calendar for a single user.
+    """
+    await update_event_cache_for_user(uid)
+    await update_calendar_for_user(uid)
 
 
 @utils.wrap_async_exceptions
