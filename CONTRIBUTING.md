@@ -16,4 +16,4 @@ I will open this by saying please do not try to test changes against the actual 
     ```
     The code will then place the access token into a json file in the current directory.
   * Backend
-    * The backend uses the Google Calendar API to add events to the user's calendar. Because there is no way to link a Google account through the emulator, there is no way to access it through the backend. In order to work around this, you can go to the file `funcitons/python/main.py`. Set the `debug` flag at the top of the file to `True` and fill out the `debug_config` with your credentials. This will cause the backend to use the given credentials to sign in to Google
+    * The backend uses the Google Calendar API to add events to the user's calendar. Because there is no way to link a Google account through the emulator, there is no way to access it through the backend. In order to work around this, you can go to the file `functions/python/main.py`. Set the `debug` flag at the top of the file to `True` and fill out the `debug_config` with your credentials. This will cause the backend to use the given credentials to sign in to Google
