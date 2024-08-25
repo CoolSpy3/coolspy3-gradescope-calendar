@@ -186,6 +186,12 @@ firebase.auth().onAuthStateChanged((loggedInUser) => {
 
 function refreshCourseList() {
     document.getElementById("refresh-course-list-button").disabled = true;
+    if(!confirm(`By updating your course list, you agree that you have read and agree to
+        the current TOS and Privacy Policy. (Last Updated: August 25, 2024)
+        If you do not agree, please press "Cancel" and delete your account.`)) {
+        document.getElementById("refresh-course-list-button").disabled = false;
+        return;
+    }
     firebase.functions().httpsCallable("refresh_course_list")()
     .then(result => {
         if (result.data.success) {
