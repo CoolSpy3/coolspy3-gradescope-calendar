@@ -166,7 +166,7 @@ def update_gradescope_token(req: https_fn.CallableRequest) -> utils.CallableFunc
 @db_fn.on_value_written(reference="credentials/{uid}/gradescope/token", secrets=secrets(DATA_ENCRYPTION_SECRET))
 def invalidate_gradescope_token(event: db_fn.Event[Any]) -> None:
     """
-    This function is called by the database when the user's Gradescope token is updated.
+    This function is called by the database when the user's Gradescope token is updated so we can invalidate the old one.
     """
     old_token = event.data.before
     if not old_token or not isinstance(old_token, str):
@@ -178,7 +178,7 @@ def invalidate_gradescope_token(event: db_fn.Event[Any]) -> None:
 @db_fn.on_value_deleted(reference="credentials/{uid}/google/token", secrets=secrets(DATA_ENCRYPTION_SECRET))
 def invalidate_google_token(event: db_fn.Event[Any]) -> None:
     """
-    This function is called by the database when the user's Google token is deleted.
+    This function is called by the database when the user's Google token is deleted so we can invalidate it.
     """
     old_token = event.data
     if not old_token or not isinstance(old_token, str):
@@ -277,7 +277,7 @@ async def refresh_events(req: https_fn.CallableRequest) -> utils.CallableFunctio
     return utils.fn_response({"success": True})
 
 
-# Run 4 times a day (every 6 hours) on the half hour
+# Run 4 times a day (every 6 hours) on the hour
 @scheduler_fn.on_schedule(schedule="0 */6 * * *",
                           secrets=secrets(OAUTH2_CLIENT_ID, OAUTH2_CLIENT_SECRET, DATA_ENCRYPTION_SECRET))
 @utils.sync
