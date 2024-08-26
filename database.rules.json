@@ -12,7 +12,6 @@
                 ".read": "auth != null && auth.uid == $uid",
                 ".write": "auth != null && auth.uid == $uid",
                 "calendar_id": {
-                    ".read": "auth != null && auth.uid == $uid",
                     ".validate": "newData.isString()"
                 },
                 "courses": {
