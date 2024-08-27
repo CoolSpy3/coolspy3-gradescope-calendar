@@ -28,10 +28,13 @@
                 This app is designed to be functional, not pretty.
                 If you want to redesign it, feel free to <a href="https://github.com/CoolSpy3/coolspy3-gradescope-calendar/pulls">submit a pull request</a>.
             </p>
-            <h2>How do I know this is a legit site?</h2>
+            <h2>Does this site support calendar apps other than Google Calendar?</h2>
             <p>
-                All the source code for this website is available on <a href="https://github.com/CoolSpy3/coolspy3-gradescope-calendar/">GitHub</a>.
-                I've also done my best to document the code and put descriptions of how data is used <a href="/privacy-policy">on this website</a>.
+                Unfortunately, no. I agree that the best way to implement this would be to provide a subscribable calendar link, however,
+                this service is closely integrated with Google Calendar, so adding support for other services would require
+                a decent amount of work. Also, implementing the service with a specific calendar in mind gives me more control over the
+                amount of backend processing required (so the service doesn't exceed the usage cap) while letting me more directly support
+                Google Calendar features. Based on interest and my availability, I may implement support for other calendar systems in the future.
             </p>
             <h2>How do I use this website?</h2>
             <p>
@@ -59,7 +62,7 @@
             <h2>How are you making money/paying for this site?</h2>
             <p>
                 I am making great use of Firebase's <a href="https://firebase.google.com/pricing">free usage limits</a>.
-                The remaining usage rates are low enough that I've set a $1 price cap on the remaining usage (so please don't DDoS me).
+                The remaining usage rates are low enough that I've set a $1 price cap on the remaining usage.
                 If this site becomes popular, I will probably add a donation button to cover the hosting costs.
                 Ultimately, I plan to use this site myself, and I heard that others might be interested in the same service without the
                 hassle of <a href="https://github.com/CoolSpy3/gradescope-calendar">the standalone version</a>.
