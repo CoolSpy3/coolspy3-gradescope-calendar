@@ -177,7 +177,7 @@ firebase.auth().onAuthStateChanged((loggedInUser) => {
                 window.location.href = "/link-google";
             }
         }).catch(error => {
-            dashboardErrorHandler(error, "An error occurred fetching your Gradescope authentication status.");
+            dashboardErrorHandler(error, "An error occurred fetching your Google authentication status.");
         });
     } else {
         window.location.href = "/401";
