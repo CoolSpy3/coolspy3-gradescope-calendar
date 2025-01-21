@@ -214,7 +214,7 @@ def refresh_course_list(req: https_fn.CallableRequest) -> utils.CallableFunction
         for course in utils.get_data_from_gradescope("",
                                                      # HTML parsing nonsense
                                                      ".//div[@class='courseList']/div["
-                                                     "@class='courseList--coursesForTerm'][2]/a[@class='courseBox']",
+                                                     "@class='courseList--coursesForTerm'][2]/a[@class='courseBox ']",
                                                      gradescope_token)
     ]
     # Map each course's ID to the course object
